@@ -1,2508 +1,380 @@
 [
   {
-    "name": "Ishikarinumata / Numata",
-    "lat": 43.8,
-    "lng": 141.95,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Tomisato",
-    "lat": 42.07,
-    "lng": 139.45,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Nagaoka / Za?machi",
-    "lat": 37.45,
-    "lng": 138.85,
-    "prec_no": 48,
-    "block_no": 47604
-  },
-  {
-    "name": "Wakkanai",
+    "name": "稚内",
     "lat": 45.4167,
     "lng": 141.6833,
+    "prec_no": 11,
+    "block_no": 47401
+  },
+  {
+    "name": "札幌",
+    "lat": 43.0642,
+    "lng": 141.3469,
     "prec_no": 14,
     "block_no": 47412
   },
   {
-    "name": "Kitamiesashi",
-    "lat": 44.9333,
-    "lng": 142.5833,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Yagishirito / Higashihama",
-    "lat": 44.4333,
-    "lng": 141.4333,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Haboro",
-    "lat": 44.3667,
-    "lng": 141.7,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Omu",
-    "lat": 44.5833,
-    "lng": 142.9667,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Rumoi",
-    "lat": 43.95,
-    "lng": 141.6333,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Asahikawa",
+    "name": "旭川",
     "lat": 43.7667,
     "lng": 142.3667,
-    "prec_no": 14,
-    "block_no": 47412
+    "prec_no": 12,
+    "block_no": 47407
   },
   {
-    "name": "Abashiri",
-    "lat": 44.0167,
-    "lng": 144.2833,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Otaru",
-    "lat": 43.1833,
-    "lng": 141.0167,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Sapporo",
-    "lat": 43.05,
-    "lng": 141.3333,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Iwamizawa",
-    "lat": 43.2167,
-    "lng": 141.7833,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Sapporo / Kenashiyama",
-    "lat": 43.1333,
-    "lng": 141.0167,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Obihiro",
-    "lat": 42.9167,
-    "lng": 143.2167,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Kushiro",
+    "name": "釧路",
     "lat": 42.9833,
     "lng": 144.4,
-    "prec_no": 14,
-    "block_no": 47412
+    "prec_no": 19,
+    "block_no": 47418
   },
   {
-    "name": "Kushiro / Kombumori",
-    "lat": 42.9608,
-    "lng": 144.5175,
-    "prec_no": 14,
-    "block_no": 47412
+    "name": "帯広",
+    "lat": 42.9167,
+    "lng": 143.2167,
+    "prec_no": 20,
+    "block_no": 47417
   },
   {
-    "name": "Nemuro",
-    "lat": 43.3333,
-    "lng": 145.5833,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Suttsu",
-    "lat": 42.8,
-    "lng": 140.2333,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Kaminokuni",
-    "lat": 41.8025,
-    "lng": 140.0711,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Muroran",
-    "lat": 42.3167,
-    "lng": 140.9833,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Tomakomai",
-    "lat": 42.6167,
-    "lng": 141.55,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Chitose Ab",
-    "lat": 42.8,
-    "lng": 141.6667,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Urakawa",
-    "lat": 42.1667,
-    "lng": 142.7833,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Erimo (Cape",
-    "lat": 41.9167,
-    "lng": 143.25,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Esashi",
-    "lat": 41.8667,
-    "lng": 140.1333,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Mori",
-    "lat": 42.1,
-    "lng": 140.5667,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Hakodate",
+    "name": "函館",
     "lat": 41.8167,
     "lng": 140.75,
-    "prec_no": 14,
-    "block_no": 47412
+    "prec_no": 23,
+    "block_no": 47430
   },
   {
-    "name": "Esan Cape / Lgt-H",
-    "lat": 41.8167,
-    "lng": 141.1833,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Hakodake / Yokotsudake",
-    "lat": 41.9333,
-    "lng": 140.7833,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Kutchan",
-    "lat": 42.9,
-    "lng": 140.7667,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Chitose Japanese Air Self Defense Force",
-    "lat": 42.8167,
-    "lng": 141.6833,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Mombetsu",
-    "lat": 44.35,
-    "lng": 143.3667,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Hiroo",
-    "lat": 42.3,
-    "lng": 143.3167,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Wakkanai Airport",
-    "lat": 45.4,
-    "lng": 141.8,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Aonae (lgt-H)",
-    "lat": 42.05,
-    "lng": 139.45,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Shakotan / Irika",
-    "lat": 43.3667,
-    "lng": 140.4667,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Rishiri Airport",
-    "lat": 45.2333,
-    "lng": 141.2,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Mombetsu Airport",
-    "lat": 44.25,
-    "lng": 143.5333,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Asahikawa Airport",
-    "lat": 43.6667,
-    "lng": 142.45,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Asahikawa Ab",
-    "lat": 43.8,
-    "lng": 142.3667,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Sapporo Ab",
-    "lat": 43.1167,
-    "lng": 141.3833,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Memambetsu",
-    "lat": 43.9167,
-    "lng": 144.2,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Memambetsu Airport",
-    "lat": 43.8833,
-    "lng": 144.1667,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Nakashibetsu Airport",
-    "lat": 43.5667,
-    "lng": 144.9667,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "New Chitose Airport",
-    "lat": 42.7667,
-    "lng": 141.7,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Hakodate Airport",
-    "lat": 41.7667,
-    "lng": 140.8167,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Kushiro Airport",
-    "lat": 43.0333,
-    "lng": 144.2,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Obihiro Airport",
-    "lat": 42.7333,
-    "lng": 143.2167,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Okushiri Airport",
-    "lat": 42.0667,
-    "lng": 139.45,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Ofunato",
-    "lat": 39.0667,
-    "lng": 141.7167,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Ryori",
-    "lat": 39.0333,
-    "lng": 141.8333,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Hachinohe Ab",
-    "lat": 40.55,
-    "lng": 141.4667,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Ominato Ab",
-    "lat": 41.2333,
-    "lng": 141.1333,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Ominato",
-    "lat": 41.2333,
-    "lng": 141.15,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Shinjo",
-    "lat": 38.75,
-    "lng": 140.3167,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Aomori Airport",
-    "lat": 40.7333,
-    "lng": 140.7,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Akita Airport",
-    "lat": 39.6167,
-    "lng": 140.2167,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Hanamaki Airport",
-    "lat": 39.4333,
-    "lng": 141.1333,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Shonai Airport",
-    "lat": 38.8167,
-    "lng": 139.7833,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Yamagata Airport",
-    "lat": 38.4167,
-    "lng": 140.3667,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Fukushima Airport",
-    "lat": 37.2333,
-    "lng": 140.4333,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Kasuminome Ab",
-    "lat": 38.2333,
-    "lng": 140.9167,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Sendai Airport",
-    "lat": 38.1333,
-    "lng": 140.9167,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Wakamatsu",
-    "lat": 37.4833,
-    "lng": 139.9167,
-    "prec_no": 48,
-    "block_no": 47604
-  },
-  {
-    "name": "Niigata / Yahikoyama",
-    "lat": 37.7167,
-    "lng": 138.8167,
-    "prec_no": 48,
-    "block_no": 47604
-  },
-  {
-    "name": "Niigata Airport",
-    "lat": 37.95,
-    "lng": 139.1167,
-    "prec_no": 48,
-    "block_no": 47604
-  },
-  {
-    "name": "Fukaura",
-    "lat": 40.65,
-    "lng": 139.9333,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Aomori",
+    "name": "青森",
     "lat": 40.8167,
     "lng": 140.7667,
-    "prec_no": 14,
-    "block_no": 47412
+    "prec_no": 31,
+    "block_no": 47575
   },
   {
-    "name": "Mutsu",
-    "lat": 41.2833,
-    "lng": 141.2167,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Shiriya Point / Lh",
-    "lat": 41.4333,
-    "lng": 141.4667,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Misawa Ab",
-    "lat": 40.7,
-    "lng": 141.3833,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Hachinohe",
-    "lat": 40.5333,
-    "lng": 141.5333,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Akita",
+    "name": "秋田",
     "lat": 39.7167,
     "lng": 140.1,
-    "prec_no": 34,
-    "block_no": 47590
+    "prec_no": 32,
+    "block_no": 47582
   },
   {
-    "name": "Odate-Noshiro Airport / Nibuna",
-    "lat": 40.1919,
-    "lng": 140.3717,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Morioka",
+    "name": "盛岡",
     "lat": 39.7,
     "lng": 141.1667,
-    "prec_no": 34,
-    "block_no": 47590
+    "prec_no": 33,
+    "block_no": 47584
   },
   {
-    "name": "Miyako",
-    "lat": 39.65,
-    "lng": 141.9667,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Sakata",
-    "lat": 38.9,
-    "lng": 139.85,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Yamagata",
+    "name": "山形",
     "lat": 38.25,
     "lng": 140.35,
-    "prec_no": 34,
-    "block_no": 47590
+    "prec_no": 35,
+    "block_no": 47588
   },
   {
-    "name": "Sendai",
+    "name": "仙台",
     "lat": 38.2667,
     "lng": 140.9,
     "prec_no": 34,
     "block_no": 47590
   },
   {
-    "name": "Matsushima Ab",
-    "lat": 38.4,
-    "lng": 141.2167,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Ishinomaki",
-    "lat": 38.4333,
-    "lng": 141.3,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Kinkasan / Kurosaki",
-    "lat": 38.2667,
-    "lng": 141.5833,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Karakuwa / Osaki",
-    "lat": 38.8583,
-    "lng": 141.6736,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Fukushima",
+    "name": "福島",
     "lat": 37.75,
     "lng": 140.4667,
-    "prec_no": 34,
-    "block_no": 47590
+    "prec_no": 36,
+    "block_no": 47595
   },
   {
-    "name": "Shirakawa",
-    "lat": 37.1333,
-    "lng": 140.2167,
-    "prec_no": 48,
-    "block_no": 47604
+    "name": "水戸",
+    "lat": 36.3833,
+    "lng": 140.4667,
+    "prec_no": 40,
+    "block_no": 47629
   },
   {
-    "name": "Onahama",
-    "lat": 36.95,
-    "lng": 140.9,
-    "prec_no": 34,
-    "block_no": 47590
+    "name": "宇都宮",
+    "lat": 36.55,
+    "lng": 139.8667,
+    "prec_no": 41,
+    "block_no": 47615
   },
   {
-    "name": "Wajima",
-    "lat": 37.3833,
-    "lng": 136.9,
-    "prec_no": 55,
-    "block_no": 47605
+    "name": "前橋",
+    "lat": 36.4,
+    "lng": 139.0667,
+    "prec_no": 42,
+    "block_no": 47624
   },
   {
-    "name": "Hegurashima",
-    "lat": 37.85,
-    "lng": 136.9167,
-    "prec_no": 55,
-    "block_no": 47605
+    "name": "熊谷",
+    "lat": 36.15,
+    "lng": 139.3833,
+    "prec_no": 43,
+    "block_no": 47626
   },
   {
-    "name": "Aikawa",
-    "lat": 38.0333,
-    "lng": 138.25,
-    "prec_no": 48,
-    "block_no": 47604
+    "name": "東京",
+    "lat": 35.6895,
+    "lng": 139.6917,
+    "prec_no": 44,
+    "block_no": 47662
   },
   {
-    "name": "Niigata",
+    "name": "千葉",
+    "lat": 35.6,
+    "lng": 140.1,
+    "prec_no": 45,
+    "block_no": 47648
+  },
+  {
+    "name": "横浜",
+    "lat": 35.4333,
+    "lng": 139.65,
+    "prec_no": 46,
+    "block_no": 47670
+  },
+  {
+    "name": "新潟",
     "lat": 37.9167,
     "lng": 139.05,
-    "prec_no": 48,
+    "prec_no": 54,
     "block_no": 47604
   },
   {
-    "name": "Kanazawa",
-    "lat": 36.5833,
-    "lng": 136.6333,
-    "prec_no": 55,
-    "block_no": 47605
-  },
-  {
-    "name": "Fushiki",
-    "lat": 36.7833,
-    "lng": 137.05,
-    "prec_no": 55,
-    "block_no": 47605
-  },
-  {
-    "name": "Toyama",
+    "name": "富山",
     "lat": 36.7,
     "lng": 137.2,
     "prec_no": 55,
+    "block_no": 47607
+  },
+  {
+    "name": "金沢",
+    "lat": 36.5833,
+    "lng": 136.6333,
+    "prec_no": 56,
     "block_no": 47605
   },
   {
-    "name": "Nagano",
-    "lat": 36.6667,
-    "lng": 138.2,
-    "prec_no": 20,
-    "block_no": 47617
-  },
-  {
-    "name": "Nagano / Yugawa",
-    "lat": 36.1031,
-    "lng": 138.1958,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Takada",
-    "lat": 37.1,
-    "lng": 138.25,
-    "prec_no": 20,
-    "block_no": 47617
-  },
-  {
-    "name": "Utsunomiya",
-    "lat": 36.55,
-    "lng": 139.8667,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Fukui",
+    "name": "福井",
     "lat": 36.05,
     "lng": 136.2333,
-    "prec_no": 55,
-    "block_no": 47605
+    "prec_no": 57,
+    "block_no": 47616
   },
   {
-    "name": "Takayama",
-    "lat": 36.15,
-    "lng": 137.25,
-    "prec_no": 55,
-    "block_no": 47605
+    "name": "長野",
+    "lat": 36.6667,
+    "lng": 138.2,
+    "prec_no": 48,
+    "block_no": 47610
   },
   {
-    "name": "Matsumoto",
-    "lat": 36.25,
-    "lng": 137.9667,
-    "prec_no": 20,
-    "block_no": 47617
-  },
-  {
-    "name": "Suwa",
-    "lat": 36.05,
-    "lng": 138.1167,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Karuizawa",
-    "lat": 36.3333,
-    "lng": 138.55,
-    "prec_no": 20,
-    "block_no": 47617
-  },
-  {
-    "name": "Maebashi",
-    "lat": 36.4,
-    "lng": 139.0667,
-    "prec_no": 20,
-    "block_no": 47617
-  },
-  {
-    "name": "Takasaki (ctbt) / Iwahana",
-    "lat": 36.2997,
-    "lng": 139.08,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Kumagaya",
-    "lat": 36.15,
-    "lng": 139.3833,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Tsuksbasan / Tsukuba",
-    "lat": 36.2167,
-    "lng": 140.1,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Kakioka",
-    "lat": 36.2333,
-    "lng": 140.2,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Mito",
-    "lat": 36.3833,
-    "lng": 140.4667,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Tsuruga",
-    "lat": 35.65,
-    "lng": 136.0667,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Gifu",
-    "lat": 35.4,
-    "lng": 136.7667,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Gifu Ab",
-    "lat": 35.3833,
-    "lng": 136.8667,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Nagoya Airport",
-    "lat": 35.25,
-    "lng": 136.9333,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Nagoya",
-    "lat": 35.1667,
-    "lng": 136.9667,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Iida",
-    "lat": 35.5167,
-    "lng": 137.8333,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Kofu",
+    "name": "甲府",
     "lat": 35.6667,
     "lng": 138.55,
-    "prec_no": 50,
-    "block_no": 47656
+    "prec_no": 49,
+    "block_no": 47638
   },
   {
-    "name": "Fujisan",
-    "lat": 35.35,
-    "lng": 138.7333,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Kawaguchiko",
-    "lat": 35.5,
-    "lng": 138.7667,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Chichibu",
-    "lat": 35.9833,
-    "lng": 139.0833,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Yokota Ab",
-    "lat": 35.75,
-    "lng": 139.35,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Iruma Ab",
-    "lat": 35.8333,
-    "lng": 139.4167,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Kiyose",
-    "lat": 35.7667,
-    "lng": 139.5333,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Tateno",
-    "lat": 36.05,
-    "lng": 140.1333,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Choshi",
-    "lat": 35.7333,
-    "lng": 140.8667,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Ueno",
-    "lat": 34.7667,
-    "lng": 136.15,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Tsu",
-    "lat": 34.7333,
-    "lng": 136.5167,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Chubu Centrair International Airport / Tokoname",
-    "lat": 34.8583,
-    "lng": 136.8053,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Irako",
-    "lat": 34.6333,
-    "lng": 137.1,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Hamamatsu",
-    "lat": 34.7,
-    "lng": 137.7167,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Omaezaki",
-    "lat": 34.6,
-    "lng": 138.2167,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Shizuoka",
+    "name": "静岡",
     "lat": 34.9667,
     "lng": 138.4,
     "prec_no": 50,
     "block_no": 47656
   },
   {
-    "name": "Mishima",
-    "lat": 35.1167,
-    "lng": 138.9333,
-    "prec_no": 50,
-    "block_no": 47656
+    "name": "名古屋",
+    "lat": 35.1667,
+    "lng": 136.9667,
+    "prec_no": 51,
+    "block_no": 47636
   },
   {
-    "name": "Shizuhama Ab",
-    "lat": 34.8167,
-    "lng": 138.3,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Shizuoka / Kikugawa",
-    "lat": 34.7428,
-    "lng": 138.1336,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Tachikawa Ab",
-    "lat": 35.7,
-    "lng": 139.4,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Kisarazu Ab",
+    "name": "岐阜",
     "lat": 35.4,
-    "lng": 139.9167,
-    "prec_no": 44,
-    "block_no": 47662
+    "lng": 136.7667,
+    "prec_no": 52,
+    "block_no": 47632
   },
   {
-    "name": "Tokyo",
-    "lat": 35.6833,
-    "lng": 139.7667,
-    "prec_no": 44,
-    "block_no": 47662
+    "name": "津",
+    "lat": 34.7333,
+    "lng": 136.5167,
+    "prec_no": 53,
+    "block_no": 47651
   },
   {
-    "name": "Owase",
-    "lat": 34.0667,
-    "lng": 136.2,
-    "prec_no": 62,
-    "block_no": 47772
+    "name": "大津",
+    "lat": 35.0167,
+    "lng": 135.8667,
+    "prec_no": 60,
+    "block_no": 47761
   },
   {
-    "name": "Dai Light House",
-    "lat": 34.2667,
-    "lng": 136.9,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Irozaki",
-    "lat": 34.6,
-    "lng": 138.85,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Ajiro",
-    "lat": 35.05,
-    "lng": 139.1,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Yokohama",
-    "lat": 35.4333,
-    "lng": 139.65,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Tokyo International Airport",
-    "lat": 35.55,
-    "lng": 139.7833,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Tateyama",
-    "lat": 34.9833,
-    "lng": 139.8667,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Katsuura",
-    "lat": 35.15,
-    "lng": 140.3167,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Oshima",
-    "lat": 34.75,
-    "lng": 139.3667,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Niijima Island / Hommura",
-    "lat": 34.3667,
-    "lng": 139.25,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Miyakejima",
-    "lat": 34.1167,
-    "lng": 139.5167,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Hachijojima",
-    "lat": 33.1,
-    "lng": 139.7833,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Atsugi United States Naval Air Station",
-    "lat": 35.45,
-    "lng": 139.45,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Zama Airfield",
-    "lat": 35.5167,
-    "lng": 139.4,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Hamamatsu Ab",
-    "lat": 34.75,
-    "lng": 137.7,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Chiba",
-    "lat": 35.6,
-    "lng": 140.1,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Chofu Airport",
-    "lat": 35.6667,
-    "lng": 139.5333,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Yokkaichi",
-    "lat": 34.9333,
-    "lng": 136.5833,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Matsushiro",
-    "lat": 36.55,
-    "lng": 138.2167,
-    "prec_no": 20,
-    "block_no": 47617
-  },
-  {
-    "name": "New Tokyo Inter-National Airport",
-    "lat": 35.7667,
-    "lng": 140.3833,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Tokyo Heliport",
-    "lat": 35.6333,
-    "lng": 139.85,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Tateyama Ab",
-    "lat": 34.9833,
-    "lng": 139.8333,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Nikko",
-    "lat": 36.7333,
-    "lng": 139.5,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Utsunomiya Ab",
-    "lat": 36.5167,
-    "lng": 139.8667,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Tokyo / Kashiwa",
-    "lat": 35.85,
-    "lng": 139.9667,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Yokosuka Fwf",
-    "lat": 35.2833,
-    "lng": 139.6667,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Sado Airport",
-    "lat": 38.05,
-    "lng": 138.4167,
-    "prec_no": 48,
-    "block_no": 47604
-  },
-  {
-    "name": "Noto Airport / Yoromi",
-    "lat": 37.2933,
-    "lng": 136.9622,
-    "prec_no": 55,
-    "block_no": 47605
-  },
-  {
-    "name": "Komatsu Ab",
-    "lat": 36.3833,
-    "lng": 136.4167,
-    "prec_no": 55,
-    "block_no": 47605
-  },
-  {
-    "name": "Fukui / Tojimbo",
-    "lat": 36.2333,
-    "lng": 136.15,
-    "prec_no": 55,
-    "block_no": 47605
-  },
-  {
-    "name": "Fukui Airport",
-    "lat": 36.1333,
-    "lng": 136.2333,
-    "prec_no": 55,
-    "block_no": 47605
-  },
-  {
-    "name": "Toyama Airport",
-    "lat": 36.65,
-    "lng": 137.1833,
-    "prec_no": 55,
-    "block_no": 47605
-  },
-  {
-    "name": "Matsumoto Airport",
-    "lat": 36.1667,
-    "lng": 137.9333,
-    "prec_no": 20,
-    "block_no": 47617
-  },
-  {
-    "name": "Hyakuri Ab",
-    "lat": 36.1833,
-    "lng": 140.4167,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Kasumigaura Ab",
-    "lat": 36.0333,
-    "lng": 140.2,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Fuji Ab",
-    "lat": 35.3167,
-    "lng": 138.8667,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Shimofusa Ab",
-    "lat": 35.8,
-    "lng": 140.0167,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Akeno Ab",
-    "lat": 34.5333,
-    "lng": 136.6833,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Oshima Airport",
-    "lat": 34.7833,
-    "lng": 139.3667,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Miyakejima Airport",
-    "lat": 34.0667,
-    "lng": 139.5667,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Hachijojima Airport",
-    "lat": 33.1167,
-    "lng": 139.7833,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Oki Airport",
-    "lat": 36.1833,
-    "lng": 133.3333,
-    "prec_no": 68,
-    "block_no": 47746
-  },
-  {
-    "name": "Saigo",
-    "lat": 36.2,
-    "lng": 133.3333,
-    "prec_no": 68,
-    "block_no": 47746
-  },
-  {
-    "name": "Matsue",
-    "lat": 35.45,
-    "lng": 133.0667,
-    "prec_no": 68,
-    "block_no": 47746
-  },
-  {
-    "name": "Sakai",
-    "lat": 35.55,
-    "lng": 133.2333,
-    "prec_no": 68,
-    "block_no": 47746
-  },
-  {
-    "name": "Miho Ab",
-    "lat": 35.4833,
-    "lng": 133.25,
-    "prec_no": 68,
-    "block_no": 47746
-  },
-  {
-    "name": "Yonago",
-    "lat": 35.4333,
-    "lng": 133.35,
-    "prec_no": 68,
-    "block_no": 47746
-  },
-  {
-    "name": "Tottori",
-    "lat": 35.4833,
-    "lng": 134.2333,
-    "prec_no": 68,
-    "block_no": 47746
-  },
-  {
-    "name": "Toyooka",
-    "lat": 35.5333,
-    "lng": 134.8167,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Maizuru Ab / Kami-sabaga",
-    "lat": 35.4903,
-    "lng": 135.3772,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Maizuru",
-    "lat": 35.45,
-    "lng": 135.3167,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Ibukiyama",
-    "lat": 35.4167,
-    "lng": 136.4167,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Mishima (lgt-H) / Hommura",
-    "lat": 34.75,
-    "lng": 131.15,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Hagi",
-    "lat": 34.4167,
-    "lng": 131.4,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Hamada",
-    "lat": 34.9,
-    "lng": 132.0667,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Tsuyama",
-    "lat": 35.0667,
-    "lng": 134.0167,
-    "prec_no": 72,
-    "block_no": 47821
-  },
-  {
-    "name": "Kyoto",
+    "name": "京都",
     "lat": 35.0167,
     "lng": 135.7333,
-    "prec_no": 62,
-    "block_no": 47772
+    "prec_no": 61,
+    "block_no": 47759
   },
   {
-    "name": "Hikone",
-    "lat": 35.2667,
-    "lng": 136.25,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Shimonoseki",
-    "lat": 33.95,
-    "lng": 130.9333,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Bofu / Mitajiri",
-    "lat": 34.0333,
-    "lng": 131.5667,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "MCAS IWAKUNI,JAPAN",
-    "lat": 34.15,
-    "lng": 132.2333,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Hiroshima",
-    "lat": 34.4,
-    "lng": 132.4667,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Kure",
-    "lat": 34.2333,
-    "lng": 132.55,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Fukuyama",
-    "lat": 34.45,
-    "lng": 133.25,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Okayama",
-    "lat": 34.65,
-    "lng": 133.9167,
-    "prec_no": 72,
-    "block_no": 47821
-  },
-  {
-    "name": "Himeji",
-    "lat": 34.8333,
-    "lng": 134.6667,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Kobe",
-    "lat": 34.6833,
-    "lng": 135.1833,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Osaka International Airport",
-    "lat": 34.7833,
-    "lng": 135.45,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Osaka",
+    "name": "大阪",
     "lat": 34.6833,
     "lng": 135.5167,
     "prec_no": 62,
     "block_no": 47772
   },
   {
-    "name": "Osaka / Takayasuyama",
-    "lat": 34.6167,
-    "lng": 135.6667,
-    "prec_no": 62,
-    "block_no": 47772
+    "name": "神戸",
+    "lat": 34.6833,
+    "lng": 135.1833,
+    "prec_no": 63,
+    "block_no": 47770
   },
   {
-    "name": "Kansai International Airport",
-    "lat": 34.4167,
-    "lng": 135.25,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Sumoto",
-    "lat": 34.3333,
-    "lng": 134.9,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Wakayama",
-    "lat": 34.2333,
-    "lng": 135.1667,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Shionomisaki",
-    "lat": 33.45,
-    "lng": 135.7667,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Yao Airport",
-    "lat": 34.6,
-    "lng": 135.6,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Nara",
+    "name": "奈良",
     "lat": 34.6833,
     "lng": 135.8333,
-    "prec_no": 62,
-    "block_no": 47772
+    "prec_no": 64,
+    "block_no": 47780
   },
   {
-    "name": "Nankishirahama Airport",
-    "lat": 33.6667,
-    "lng": 135.35,
-    "prec_no": 62,
-    "block_no": 47772
+    "name": "和歌山",
+    "lat": 34.2333,
+    "lng": 135.1667,
+    "prec_no": 65,
+    "block_no": 47777
   },
   {
-    "name": "Iwami Airport",
-    "lat": 34.6667,
-    "lng": 131.8,
+    "name": "鳥取",
+    "lat": 35.4833,
+    "lng": 134.2333,
+    "prec_no": 69,
+    "block_no": 47746
+  },
+  {
+    "name": "松江",
+    "lat": 35.45,
+    "lng": 133.0667,
+    "prec_no": 68,
+    "block_no": 47741
+  },
+  {
+    "name": "岡山",
+    "lat": 34.65,
+    "lng": 133.9167,
+    "prec_no": 66,
+    "block_no": 47768
+  },
+  {
+    "name": "広島",
+    "lat": 34.4,
+    "lng": 132.4667,
     "prec_no": 67,
     "block_no": 47765
   },
   {
-    "name": "Yamaguchi",
+    "name": "山口",
     "lat": 34.15,
     "lng": 131.45,
-    "prec_no": 67,
-    "block_no": 47765
+    "prec_no": 81,
+    "block_no": 47762
   },
   {
-    "name": "Yamaguchi Ube Airport",
-    "lat": 33.9333,
-    "lng": 131.2833,
-    "prec_no": 82,
-    "block_no": 47807
+    "name": "下関",
+    "lat": 33.95,
+    "lng": 130.9333,
+    "prec_no": 81,
+    "block_no": 47762
   },
   {
-    "name": "Ozuki Ab",
-    "lat": 34.05,
-    "lng": 131.05,
-    "prec_no": 82,
-    "block_no": 47807
+    "name": "徳島",
+    "lat": 34.0667,
+    "lng": 134.5833,
+    "prec_no": 71,
+    "block_no": 47895
   },
   {
-    "name": "Hofu Ab",
-    "lat": 34.0333,
-    "lng": 131.55,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Hiroshima Airport",
-    "lat": 34.4333,
-    "lng": 132.9167,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Izumo Airport",
-    "lat": 35.4167,
-    "lng": 132.9,
-    "prec_no": 68,
-    "block_no": 47746
-  },
-  {
-    "name": "Matsue / Misakayama",
-    "lat": 35.5333,
-    "lng": 133.1,
-    "prec_no": 68,
-    "block_no": 47746
-  },
-  {
-    "name": "Hiroshima / Haigamine",
-    "lat": 34.2667,
-    "lng": 132.6,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Okayama Airport",
-    "lat": 34.75,
-    "lng": 133.85,
+    "name": "高松",
+    "lat": 34.3167,
+    "lng": 134.05,
     "prec_no": 72,
-    "block_no": 47821
+    "block_no": 47891
   },
   {
-    "name": "Tottori Airport",
-    "lat": 35.5333,
-    "lng": 134.1667,
-    "prec_no": 68,
-    "block_no": 47746
+    "name": "松山",
+    "lat": 33.8333,
+    "lng": 132.7833,
+    "prec_no": 73,
+    "block_no": 47887
   },
   {
-    "name": "Wakayama / Wada",
-    "lat": 33.9,
-    "lng": 135.1333,
-    "prec_no": 62,
-    "block_no": 47772
+    "name": "高知",
+    "lat": 33.55,
+    "lng": 133.5333,
+    "prec_no": 74,
+    "block_no": 47893
   },
   {
-    "name": "Kobe / Wadasakich?",
-    "lat": 34.6328,
-    "lng": 135.2239,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Tsushima Airport",
-    "lat": 34.2833,
-    "lng": 129.3333,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Izuhara",
-    "lat": 34.2,
-    "lng": 129.3,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Kuta",
-    "lat": 34.19,
-    "lng": 129.29,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Ashiya Ab",
-    "lat": 33.8833,
-    "lng": 130.65,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Hirado",
-    "lat": 33.35,
-    "lng": 129.55,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Fukuoka / Sefurisan",
-    "lat": 33.4333,
-    "lng": 130.3667,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Fukuoka",
+    "name": "福岡",
     "lat": 33.5833,
     "lng": 130.3833,
     "prec_no": 82,
     "block_no": 47807
   },
   {
-    "name": "Fukuoka Airport",
-    "lat": 33.5833,
-    "lng": 130.45,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Iizuka",
-    "lat": 33.65,
-    "lng": 130.7,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Saga Airport / ?kawa",
-    "lat": 33.1497,
-    "lng": 130.3022,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Sasebo Usn",
-    "lat": 33.15,
-    "lng": 129.7167,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Sasebo",
-    "lat": 33.15,
-    "lng": 129.7333,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Saga",
+    "name": "佐賀",
     "lat": 33.25,
     "lng": 130.3,
-    "prec_no": 82,
-    "block_no": 47807
+    "prec_no": 85,
+    "block_no": 47813
   },
   {
-    "name": "Hita",
-    "lat": 33.3167,
-    "lng": 130.9333,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Oita",
-    "lat": 33.2333,
-    "lng": 131.6167,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Tomie / Maki",
-    "lat": 33.4397,
-    "lng": 129.4303,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Nagasaki",
+    "name": "長崎",
     "lat": 32.7333,
     "lng": 129.8667,
-    "prec_no": 82,
-    "block_no": 47807
+    "prec_no": 84,
+    "block_no": 47817
   },
   {
-    "name": "Unzendake",
-    "lat": 32.7333,
-    "lng": 130.2667,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Kumamoto",
+    "name": "熊本",
     "lat": 32.8167,
     "lng": 130.7167,
-    "prec_no": 82,
-    "block_no": 47807
+    "prec_no": 86,
+    "block_no": 47819
   },
   {
-    "name": "Asosan",
-    "lat": 32.8833,
-    "lng": 131.0833,
-    "prec_no": 82,
-    "block_no": 47807
+    "name": "大分",
+    "lat": 33.2333,
+    "lng": 131.6167,
+    "prec_no": 83,
+    "block_no": 47815
   },
   {
-    "name": "Nobeoka",
-    "lat": 32.5833,
-    "lng": 131.6667,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Akune",
-    "lat": 32.0167,
-    "lng": 130.2,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Hitoyoshi",
-    "lat": 32.2167,
-    "lng": 130.75,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Kagoshima",
-    "lat": 31.55,
-    "lng": 130.55,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Miyakonojo",
-    "lat": 31.7333,
-    "lng": 131.0833,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Miyazaki",
+    "name": "宮崎",
     "lat": 31.9167,
     "lng": 131.4167,
-    "prec_no": 89,
+    "prec_no": 87,
+    "block_no": 47830
+  },
+  {
+    "name": "鹿児島",
+    "lat": 31.55,
+    "lng": 130.55,
+    "prec_no": 88,
     "block_no": 47827
   },
   {
-    "name": "Makurazaki",
-    "lat": 31.2667,
-    "lng": 130.3,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Kanoya",
-    "lat": 31.4167,
-    "lng": 130.8833,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Aburatsu",
-    "lat": 31.5667,
-    "lng": 131.4167,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Yakushima",
-    "lat": 30.3833,
-    "lng": 130.6667,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Tanegashima",
-    "lat": 30.7333,
-    "lng": 131.0,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Ushibuka",
-    "lat": 32.2,
-    "lng": 130.0333,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Tsuiki Ab",
-    "lat": 33.6833,
-    "lng": 131.05,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Meshima",
-    "lat": 31.9833,
-    "lng": 128.35,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Fukue",
-    "lat": 32.7,
-    "lng": 128.8333,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Fukue Airport",
-    "lat": 32.6667,
-    "lng": 128.8333,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Kusagkishima / Katatomari",
-    "lat": 30.85,
-    "lng": 129.4667,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Gajashima / Nakanoshima",
-    "lat": 29.9167,
-    "lng": 129.5333,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Kagoshima / Minatomachi",
-    "lat": 31.7167,
-    "lng": 130.3167,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Uchinoura",
-    "lat": 31.25,
-    "lng": 131.0833,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Kanoya Ab",
-    "lat": 31.3667,
-    "lng": 130.8333,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Kagoshima Airport",
-    "lat": 31.8,
-    "lng": 130.7167,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Oita Airport",
-    "lat": 33.4833,
-    "lng": 131.7333,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Kitakyushu Airport",
-    "lat": 33.8333,
-    "lng": 130.95,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Nyutabaru Ab",
-    "lat": 32.0833,
-    "lng": 131.45,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Nagasaki Airport",
-    "lat": 32.9167,
-    "lng": 129.9167,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Kumamoto Airport",
-    "lat": 32.8333,
-    "lng": 130.85,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Miyazaki Airport",
-    "lat": 31.8667,
-    "lng": 131.45,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Iki Airport",
-    "lat": 33.75,
-    "lng": 129.7833,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Omura Ab / ?mura",
-    "lat": 32.9278,
-    "lng": 129.9339,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Metabaru Ab",
-    "lat": 33.3167,
-    "lng": 130.4167,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Tanegashima / Nakatane",
-    "lat": 30.6333,
-    "lng": 130.9833,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Tanegashima Airport",
-    "lat": 30.55,
-    "lng": 130.95,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Amami Airport",
-    "lat": 28.4333,
-    "lng": 129.7167,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Takamatsu Airport",
-    "lat": 34.2167,
-    "lng": 134.0167,
-    "prec_no": 72,
-    "block_no": 47821
-  },
-  {
-    "name": "Tokushima Ab",
-    "lat": 34.1333,
-    "lng": 134.6167,
-    "prec_no": 72,
-    "block_no": 47821
-  },
-  {
-    "name": "Matsuyama Airport",
-    "lat": 33.8167,
-    "lng": 132.7,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Kochi Airport",
-    "lat": 33.5333,
-    "lng": 133.6667,
-    "prec_no": 72,
-    "block_no": 47821
-  },
-  {
-    "name": "Komatsujima Ab",
-    "lat": 34.0,
-    "lng": 134.6333,
-    "prec_no": 72,
-    "block_no": 47821
-  },
-  {
-    "name": "Shimizu / Kubotsu",
-    "lat": 32.7833,
-    "lng": 132.9667,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Matsuyama",
-    "lat": 33.8333,
-    "lng": 132.7833,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Tadotsu",
-    "lat": 34.2667,
-    "lng": 133.75,
-    "prec_no": 72,
-    "block_no": 47821
-  },
-  {
-    "name": "Takamatsu",
-    "lat": 34.3167,
-    "lng": 134.05,
-    "prec_no": 72,
-    "block_no": 47821
-  },
-  {
-    "name": "Uwajima",
-    "lat": 33.2167,
-    "lng": 132.55,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Kochi",
-    "lat": 33.55,
-    "lng": 133.5333,
-    "prec_no": 72,
-    "block_no": 47821
-  },
-  {
-    "name": "Tsurugisan",
-    "lat": 33.85,
-    "lng": 134.1,
-    "prec_no": 72,
-    "block_no": 47821
-  },
-  {
-    "name": "Tokushima",
-    "lat": 34.0667,
-    "lng": 134.5833,
-    "prec_no": 72,
-    "block_no": 47821
-  },
-  {
-    "name": "Tosaokinoshima (lh) / Hirose",
-    "lat": 32.7,
-    "lng": 132.55,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Sukumo",
-    "lat": 32.9167,
-    "lng": 132.7,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Shimizu",
-    "lat": 32.7167,
-    "lng": 133.0167,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Murotomisaki",
-    "lat": 33.25,
-    "lng": 134.1833,
-    "prec_no": 72,
-    "block_no": 47821
-  },
-  {
-    "name": "Tokunoshima Airport",
-    "lat": 27.8333,
-    "lng": 128.8833,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Naze",
-    "lat": 28.3833,
-    "lng": 129.5,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Tokunoshima Island",
-    "lat": 27.8333,
-    "lng": 128.8833,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Yonaguni Airport",
-    "lat": 24.4667,
-    "lng": 122.9833,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Yonagunijima",
-    "lat": 24.4667,
-    "lng": 123.0167,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Iriomotejima",
-    "lat": 24.3833,
-    "lng": 123.75,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Ishigakijima",
-    "lat": 24.3333,
-    "lng": 124.1667,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Ishigaki Airport",
-    "lat": 24.3333,
-    "lng": 124.1833,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Ishigakijima / Omotodake",
-    "lat": 24.4167,
-    "lng": 124.1833,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Shimojishima Airport",
-    "lat": 24.8167,
-    "lng": 125.15,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Miyako Airport",
-    "lat": 24.7833,
-    "lng": 125.3,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Miyakojima",
-    "lat": 24.7833,
-    "lng": 125.2833,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Kumejima Airport",
-    "lat": 26.3667,
-    "lng": 126.7167,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Kumejima",
-    "lat": 26.3333,
-    "lng": 126.8,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Naha Airport",
-    "lat": 26.1833,
-    "lng": 127.65,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Kadena Ab",
-    "lat": 26.35,
-    "lng": 127.7667,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Futenma Marine Corps Air Facility",
-    "lat": 26.2667,
-    "lng": 127.75,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Hamby U. S. Army Airfield",
-    "lat": 26.3,
-    "lng": 127.7667,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Naha",
+    "name": "那覇",
     "lat": 26.2,
     "lng": 127.6833,
     "prec_no": 91,
     "block_no": 47936
   },
   {
-    "name": "Naha / Itokazu",
-    "lat": 26.15,
-    "lng": 127.7667,
+    "name": "石垣",
+    "lat": 24.3333,
+    "lng": 124.1667,
     "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Iejima Auxiliary Ab",
-    "lat": 26.7167,
-    "lng": 127.7833,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Nago",
-    "lat": 26.5833,
-    "lng": 127.9667,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Okinoerabu",
-    "lat": 27.4333,
-    "lng": 128.7,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Minamidaito Airport",
-    "lat": 25.85,
-    "lng": 131.2333,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Minamidaitojima",
-    "lat": 25.8333,
-    "lng": 131.2333,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Okinawa (ctbt) / Atsutabaru",
-    "lat": 26.5,
-    "lng": 127.9,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Chichijima",
-    "lat": 27.0833,
-    "lng": 142.1833,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Iwojima",
-    "lat": 24.7833,
-    "lng": 141.3167,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Minamitorishima",
-    "lat": 24.3,
-    "lng": 153.9667,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Ichikawa / Ichigaya",
-    "lat": 35.7333,
-    "lng": 139.9167,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Atsugi / Sakurakabu",
-    "lat": 35.45,
-    "lng": 139.45,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Japan",
-    "lat": 29.0,
-    "lng": 135.0,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Buoy",
-    "lat": 37.7,
-    "lng": 134.3,
-    "prec_no": 55,
-    "block_no": 47605
-  },
-  {
-    "name": "Buoy / Habuminato",
-    "lat": 34.7,
-    "lng": 139.5,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Buoy",
-    "lat": 29.0,
-    "lng": 135.0,
-    "prec_no": 89,
-    "block_no": 47827
-  },
-  {
-    "name": "Buoy",
-    "lat": 28.3,
-    "lng": 126.0,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Buoy",
-    "lat": 38.5,
-    "lng": 145.5,
-    "prec_no": 34,
-    "block_no": 47590
-  },
-  {
-    "name": "Buoy",
-    "lat": 22.5,
-    "lng": -59.5,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Misawa / Izumimachi",
-    "lat": 40.6833,
-    "lng": 141.4,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Atsugi / Sakurakabu",
-    "lat": 35.45,
-    "lng": 139.4667,
-    "prec_no": 44,
-    "block_no": 47662
-  },
-  {
-    "name": "Hiroshimanishi / Ebamachi",
-    "lat": 34.3667,
-    "lng": 132.4333,
-    "prec_no": 67,
-    "block_no": 47765
-  },
-  {
-    "name": "Tajima / Toyooka",
-    "lat": 35.5167,
-    "lng": 134.8,
-    "prec_no": 62,
-    "block_no": 47772
-  },
-  {
-    "name": "Rebun Island / Funadomari",
-    "lat": 45.45,
-    "lng": 141.0333,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Tokachi / Nishi-nij?",
-    "lat": 42.9,
-    "lng": 143.1667,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Kamigoto / Tomosumi",
-    "lat": 33.0167,
-    "lng": 129.1833,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Ojika Island / Fuefuki",
-    "lat": 33.2167,
-    "lng": 129.05,
-    "prec_no": 82,
-    "block_no": 47807
-  },
-  {
-    "name": "Rishiri Island / Hontomari",
-    "lat": 45.25,
-    "lng": 141.1833,
-    "prec_no": 14,
-    "block_no": 47412
-  },
-  {
-    "name": "Nagoya / Tokoname",
-    "lat": 34.85,
-    "lng": 136.8,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Kikai Island / Akaren",
-    "lat": 28.3167,
-    "lng": 129.9333,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Nagoya / Kita-toyama",
-    "lat": 35.255,
-    "lng": 136.924,
-    "prec_no": 51,
-    "block_no": 47636
-  },
-  {
-    "name": "Shizuoka",
-    "lat": 34.7961,
-    "lng": 138.1894,
-    "prec_no": 50,
-    "block_no": 47656
-  },
-  {
-    "name": "Soumagahara",
-    "lat": 36.4347,
-    "lng": 138.9531,
-    "prec_no": 20,
-    "block_no": 47617
-  },
-  {
-    "name": "Aguni Island / Nishi",
-    "lat": 26.6,
-    "lng": 127.2333,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Iejima / Irieue",
-    "lat": 26.7167,
-    "lng": 127.7833,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Hateruma",
-    "lat": 24.0667,
-    "lng": 123.8,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Kitadaito Island / Nakanoku",
-    "lat": 25.9167,
-    "lng": 131.3333,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Shimoji-Shima Island / Shimojishima / shimochi",
-    "lat": 24.8333,
-    "lng": 125.15,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Tarama Island",
-    "lat": 24.65,
-    "lng": 124.7,
-    "prec_no": 91,
-    "block_no": 47936
-  },
-  {
-    "name": "Yoron Island / Chabana",
-    "lat": 27.05,
-    "lng": 128.4,
-    "prec_no": 91,
-    "block_no": 47936
+    "block_no": 47918
   }
 ]
