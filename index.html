@@ -48,6 +48,35 @@
                     </div>
                     <input type="file" id="file-input" accept="image/*,video/mp4" style="display: none;">
                 </div>
+
+                <!-- 画像プレビューエリア -->
+                <div id="image-preview" class="image-preview" style="display: none;">
+                    <div class="preview-header">
+                        <h3>📁 アップロードファイル</h3>
+                        <div class="preview-controls">
+                            <button id="toggle-preview-btn" class="btn btn-secondary">🔍 プレビュー表示</button>
+                            <button id="change-file-btn" class="btn btn-secondary">📂 別ファイル選択</button>
+                        </div>
+                    </div>
+                    
+                    <div class="preview-content">
+                        <div class="file-info">
+                            <div class="file-basic-info">
+                                <p><strong>📄 ファイル名:</strong> <span id="file-name">-</span></p>
+                                <p><strong>📊 ファイルサイズ:</strong> <span id="file-size">-</span></p>
+                                <p><strong>🎭 形式:</strong> <span id="file-type">-</span></p>
+                                <p><strong>📅 更新日:</strong> <span id="file-modified">-</span></p>
+                            </div>
+                        </div>
+                        
+                        <div id="image-display" class="image-display" style="display: none;">
+                            <img id="preview-img" src="" alt="プレビュー画像" />
+                            <div class="privacy-notice">
+                                <small>🔒 プライバシー保護: 画像はローカルでのみ表示され、外部に送信されません</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- 解析結果表示エリア -->

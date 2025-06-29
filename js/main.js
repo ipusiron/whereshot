@@ -155,6 +155,18 @@ class WhereShotApp {
         mapLayerSelect?.addEventListener('change', (e) => {
             window.WhereShotMapController.switchLayer(e.target.value);
         });
+
+        // プレビュー表示切り替えボタン
+        const togglePreviewBtn = document.getElementById('toggle-preview-btn');
+        togglePreviewBtn?.addEventListener('click', () => {
+            this.toggleImagePreview();
+        });
+
+        // ファイル変更ボタン
+        const changeFileBtn = document.getElementById('change-file-btn');
+        changeFileBtn?.addEventListener('click', () => {
+            this.changeFile();
+        });
     }
 
     /**
@@ -274,6 +286,15 @@ class WhereShotApp {
             }
 
             this.currentFile = file;
+
+            // ファイル情報を表示
+            this.displayFileInfo(file);
+
+            // ドロップゾーンの状態を更新
+            this.updateDropZoneState(true);
+
+            // プレビューエリアを表示
+            this.showImagePreview();
 
             // Exif情報を抽出
             const exifData = await window.WhereShotExifParser.extractExifData(file);
@@ -663,6 +684,15 @@ class WhereShotApp {
             resultsDiv.style.display = 'none';
         }
 
+        // プレビューエリアを非表示
+        const previewDiv = document.getElementById('image-preview');
+        if (previewDiv) {
+            previewDiv.style.display = 'none';
+        }
+
+        // ドロップゾーンの状態をリセット
+        this.updateDropZoneState(false);
+
         // 各情報をクリア
         const infoElements = [
             'datetime-info',
@@ -691,6 +721,126 @@ class WhereShotApp {
         const fileInput = document.getElementById('file-input');
         if (fileInput) {
             fileInput.value = '';
+        }
+    }
+
+    /**
+     * ファイル情報を表示
+     * @param {File} file - ファイルオブジェクト
+     */
+    displayFileInfo(file) {
+        // ファイル名
+        const fileNameElement = document.getElementById('file-name');
+        if (fileNameElement) {
+            fileNameElement.textContent = file.name;
+        }
+
+        // ファイルサイズ
+        const fileSizeElement = document.getElementById('file-size');
+        if (fileSizeElement) {
+            fileSizeElement.textContent = window.WhereShotUtils.FileUtils.formatFileSize(file.size);
+        }
+
+        // ファイル形式
+        const fileTypeElement = document.getElementById('file-type');
+        if (fileTypeElement) {
+            fileTypeElement.textContent = file.type || '不明';
+        }
+
+        // 更新日
+        const fileModifiedElement = document.getElementById('file-modified');
+        if (fileModifiedElement) {
+            fileModifiedElement.textContent = window.WhereShotUtils.DateUtils.formatDateTime(new Date(file.lastModified));
+        }
+    }
+
+    /**
+     * プレビューエリアを表示
+     */
+    showImagePreview() {
+        const previewDiv = document.getElementById('image-preview');
+        if (previewDiv) {
+            previewDiv.style.display = 'block';
+        }
+    }
+
+    /**
+     * 画像プレビューの表示切り替え
+     */
+    toggleImagePreview() {
+        const imageDisplay = document.getElementById('image-display');
+        const toggleBtn = document.getElementById('toggle-preview-btn');
+        const previewImg = document.getElementById('preview-img');
+
+        if (!this.currentFile) return;
+
+        if (imageDisplay.style.display === 'none' || !imageDisplay.style.display) {
+            // プレビューを表示
+            if (this.currentFile.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    imageDisplay.style.display = 'block';
+                    toggleBtn.textContent = '🙈 プレビュー非表示';
+                };
+                reader.readAsDataURL(this.currentFile);
+            } else {
+                window.WhereShotUtils.UIUtils.showError('画像ファイルではないため、プレビューできません');
+            }
+        } else {
+            // プレビューを非表示
+            imageDisplay.style.display = 'none';
+            previewImg.src = '';
+            toggleBtn.textContent = '🔍 プレビュー表示';
+        }
+    }
+
+    /**
+     * ファイルを変更
+     */
+    changeFile() {
+        const fileInput = document.getElementById('file-input');
+        if (fileInput) {
+            fileInput.click();
+        }
+    }
+
+    /**
+     * ドロップゾーンの状態を更新
+     * @param {boolean} uploaded - アップロード済みかどうか
+     */
+    updateDropZoneState(uploaded) {
+        const dropZone = document.getElementById('drop-zone');
+        const dropZoneContent = dropZone?.querySelector('.drop-zone-content');
+
+        if (!dropZone || !dropZoneContent) return;
+
+        if (uploaded && this.currentFile) {
+            dropZone.classList.add('uploaded');
+            dropZoneContent.innerHTML = `
+                <div class="upload-icon">✅</div>
+                <div>
+                    <h3>ファイル読み込み完了</h3>
+                    <p>${this.currentFile.name}</p>
+                    <small>別のファイルをドロップするか、下のボタンで変更できます</small>
+                </div>
+            `;
+        } else {
+            dropZone.classList.remove('uploaded');
+            dropZoneContent.innerHTML = `
+                <div class="upload-icon">📸</div>
+                <h3>画像をドラッグ&ドロップ</h3>
+                <p>または <button id="file-select-btn" class="btn btn-primary">ファイルを選択</button></p>
+                <small>対応形式: JPEG, PNG, TIFF, MP4</small>
+            `;
+            
+            // ボタンイベントを再設定
+            const fileSelectBtn = document.getElementById('file-select-btn');
+            const fileInput = document.getElementById('file-input');
+            fileSelectBtn?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
         }
     }
 }
