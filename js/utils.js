@@ -199,11 +199,53 @@ const URLUtils = {
      * @returns {string} 気象庁 URL
      */
     generateWeatherURL: (lat, lng, date) => {
-        // 簡略化：東京の気象データへのリンク
-        const year = date ? date.getFullYear() : new Date().getFullYear();
-        const month = date ? (date.getMonth() + 1) : (new Date().getMonth() + 1);
-        
-        return `https://www.data.jma.go.jp/obd/stats/etrn/view/daily_s1.php?prec_no=44&block_no=47662&year=${year}&month=${month}&day=1&view=`;
+        if (!date) {
+            // 日付がない場合は気象庁のトップページ
+            return 'https://www.data.jma.go.jp/obd/stats/etrn/index.php';
+        }
+
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+
+        // 地域の判定（簡易版：日本国内の主要観測所）
+        let precNo = 44; // デフォルト：東京
+        let blockNo = 47662; // デフォルト：東京
+
+        // 緯度経度から観測所を推定（簡易版）
+        if (lat && lng) {
+            // 北海道
+            if (lat >= 41.5) {
+                precNo = 14; blockNo = 47412; // 札幌
+            }
+            // 東北
+            else if (lat >= 37.5 && lng <= 141.5) {
+                precNo = 34; blockNo = 47590; // 仙台
+            }
+            // 関東
+            else if (lat >= 35.0 && lat < 37.5 && lng >= 138.5 && lng <= 140.5) {
+                precNo = 44; blockNo = 47662; // 東京
+            }
+            // 中部
+            else if (lat >= 34.5 && lat < 37.0 && lng >= 136.0 && lng < 139.0) {
+                precNo = 51; blockNo = 47636; // 名古屋
+            }
+            // 関西
+            else if (lat >= 34.0 && lat < 36.0 && lng >= 134.0 && lng < 136.5) {
+                precNo = 62; blockNo = 47772; // 大阪
+            }
+            // 中国
+            else if (lat >= 33.5 && lat < 35.5 && lng >= 131.5 && lng < 134.5) {
+                precNo = 67; blockNo = 47765; // 広島
+            }
+            // 九州
+            else if (lat < 34.0) {
+                precNo = 82; blockNo = 47807; // 福岡
+            }
+        }
+
+        // 気象庁の過去の気象データURL
+        return `https://www.data.jma.go.jp/obd/stats/etrn/view/daily_s1.php?prec_no=${precNo}&block_no=${blockNo}&year=${year}&month=${month}&day=${day}&view=`;
     },
 
     /**

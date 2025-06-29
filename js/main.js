@@ -34,6 +34,9 @@ class WhereShotApp {
             // セキュリティ設定
             this.setupSecurity();
 
+            // 外部リンクの初期設定
+            this.initializeExternalLinks();
+
             this.isInitialized = true;
             console.log('[WhereShot] Application initialized successfully');
 
@@ -272,6 +275,56 @@ class WhereShotApp {
     }
 
     /**
+     * 外部リンクの初期設定
+     */
+    initializeExternalLinks() {
+        // 各外部リンクにデフォルトのtarget="_blank"とrel属性を設定
+        const externalLinks = [
+            'nasa-worldview-link',
+            'weather-link',
+            'gsi-map-link',
+            'gsi-photo-link',
+            'streetview-link',
+            'reverse-image-link'
+        ];
+
+        externalLinks.forEach(linkId => {
+            const link = document.getElementById(linkId);
+            if (link) {
+                // デフォルトのhrefを確認（#の場合は無効化）
+                if (link.href === '#' || link.href.endsWith('#')) {
+                    link.style.opacity = '0.5';
+                    link.style.cursor = 'not-allowed';
+                    link.onclick = (e) => {
+                        e.preventDefault();
+                        window.WhereShotUtils.UIUtils.showError('画像を読み込んでから外部リンクをご利用ください');
+                    };
+                }
+                
+                // セキュリティ属性を確実に設定
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+            }
+        });
+
+        // 気象庁リンクのデフォルト設定
+        const weatherLink = document.getElementById('weather-link');
+        if (weatherLink) {
+            weatherLink.href = 'https://www.data.jma.go.jp/obd/stats/etrn/index.php';
+            weatherLink.title = '気象庁 過去の気象データ・ダウンロード';
+        }
+
+        // 類似画像検索のデフォルト設定
+        const reverseImageLink = document.getElementById('reverse-image-link');
+        if (reverseImageLink) {
+            reverseImageLink.href = 'https://images.google.com/';
+            reverseImageLink.title = 'Google画像検索';
+        }
+
+        console.log('[WhereShot] External links initialized');
+    }
+
+    /**
      * ファイル選択処理
      * @param {File} file - 選択されたファイル
      */
@@ -454,42 +507,101 @@ class WhereShotApp {
         const lng = exifData.gps.longitude;
         const dateTime = exifData.dateTime.original;
 
+        console.log('[WhereShot] Updating external links:', { lat, lng, dateTime });
+
+        // すべての外部リンクを有効化
+        this.enableExternalLinks();
+
         if (lat && lng) {
             // NASA Worldview
             const nasaLink = document.getElementById('nasa-worldview-link');
             if (nasaLink) {
-                nasaLink.href = window.WhereShotUtils.URLUtils.generateNASAWorldviewURL(lat, lng, dateTime);
+                const nasaURL = window.WhereShotUtils.URLUtils.generateNASAWorldviewURL(lat, lng, dateTime);
+                nasaLink.href = nasaURL;
+                nasaLink.target = '_blank';
+                nasaLink.rel = 'noopener noreferrer';
+                console.log('[WhereShot] NASA Worldview URL:', nasaURL);
             }
 
             // 地理院地図
             const gsiMapLink = document.getElementById('gsi-map-link');
             if (gsiMapLink) {
-                gsiMapLink.href = window.WhereShotUtils.URLUtils.generateGSIMapURL(lat, lng);
+                const gsiURL = window.WhereShotUtils.URLUtils.generateGSIMapURL(lat, lng);
+                gsiMapLink.href = gsiURL;
+                gsiMapLink.target = '_blank';
+                gsiMapLink.rel = 'noopener noreferrer';
+                console.log('[WhereShot] GSI Map URL:', gsiURL);
             }
 
             const gsiPhotoLink = document.getElementById('gsi-photo-link');
             if (gsiPhotoLink) {
-                gsiPhotoLink.href = window.WhereShotUtils.URLUtils.generateGSIPhotoURL(lat, lng);
+                const gsiPhotoURL = window.WhereShotUtils.URLUtils.generateGSIPhotoURL(lat, lng);
+                gsiPhotoLink.href = gsiPhotoURL;
+                gsiPhotoLink.target = '_blank';
+                gsiPhotoLink.rel = 'noopener noreferrer';
+                console.log('[WhereShot] GSI Photo URL:', gsiPhotoURL);
             }
 
             // Street View
             const streetViewLink = document.getElementById('streetview-link');
             if (streetViewLink) {
-                streetViewLink.href = window.WhereShotUtils.URLUtils.generateStreetViewURL(lat, lng);
+                const streetViewURL = window.WhereShotUtils.URLUtils.generateStreetViewURL(lat, lng);
+                streetViewLink.href = streetViewURL;
+                streetViewLink.target = '_blank';
+                streetViewLink.rel = 'noopener noreferrer';
+                console.log('[WhereShot] Street View URL:', streetViewURL);
             }
         }
 
-        // 気象情報
+        // 気象情報（位置情報と日時の両方が必要）
         const weatherLink = document.getElementById('weather-link');
-        if (weatherLink && dateTime) {
-            weatherLink.href = window.WhereShotUtils.URLUtils.generateWeatherURL(lat, lng, dateTime);
+        if (weatherLink) {
+            const weatherURL = window.WhereShotUtils.URLUtils.generateWeatherURL(lat, lng, dateTime);
+            weatherLink.href = weatherURL;
+            weatherLink.target = '_blank';
+            weatherLink.rel = 'noopener noreferrer';
+            console.log('[WhereShot] Weather URL:', weatherURL);
+            
+            // 位置情報がない場合の処理
+            if (!lat || !lng) {
+                weatherLink.title = '位置情報がないため、気象庁トップページにリンクします';
+            } else {
+                weatherLink.title = `撮影地点の過去の天気データにリンクします`;
+            }
         }
 
         // 類似画像検索
         const reverseImageLink = document.getElementById('reverse-image-link');
         if (reverseImageLink) {
-            reverseImageLink.href = window.WhereShotUtils.URLUtils.generateReverseImageURL();
+            const reverseImageURL = window.WhereShotUtils.URLUtils.generateReverseImageURL();
+            reverseImageLink.href = reverseImageURL;
+            reverseImageLink.target = '_blank';
+            reverseImageLink.rel = 'noopener noreferrer';
+            console.log('[WhereShot] Reverse Image URL:', reverseImageURL);
         }
+    }
+
+    /**
+     * 外部リンクを有効化
+     */
+    enableExternalLinks() {
+        const externalLinks = [
+            'nasa-worldview-link',
+            'weather-link',
+            'gsi-map-link',
+            'gsi-photo-link',
+            'streetview-link',
+            'reverse-image-link'
+        ];
+
+        externalLinks.forEach(linkId => {
+            const link = document.getElementById(linkId);
+            if (link) {
+                link.style.opacity = '1';
+                link.style.cursor = 'pointer';
+                link.onclick = null; // イベントハンドラーを削除
+            }
+        });
     }
 
     /**
