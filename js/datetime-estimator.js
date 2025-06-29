@@ -10,14 +10,14 @@ class DateTimeEstimator {
             
             // YYYY-MM-DD HH:MM:SS形式（最も一般的）
             {
-                pattern: /(\d{4})[_\-\/](\d{1,2})[_\-\/](\d{1,2})[_\s\-T](\d{1,2})[_:\-](\d{1,2})[_:\-](\d{1,2})/,
+                pattern: /(\d{4})[_\-\/](\d{1,2})[_\-\/](\d{1,2})[_\s\-T](\d{1,2})[_:\-\.](\d{1,2})[_:\-\.](\d{1,2})/,
                 format: 'YYYY-MM-DD HH:MM:SS',
                 reliability: 0.95
             },
             
             // YYYYMMDD_HHMMSS形式（カメラ系で多用）
             {
-                pattern: /(\d{4})(\d{2})(\d{2})[_\-\s](\d{2})(\d{2})(\d{2})/,
+                pattern: /(\d{4})(\d{2})(\d{2})[_\-\s](\d{2})[_:\-\.](\d{2})[_:\-\.](\d{2})/,
                 format: 'YYYYMMDD_HHMMSS',
                 reliability: 0.95
             },
@@ -31,56 +31,56 @@ class DateTimeEstimator {
             
             // IMG_YYYYMMDD_HHMMSS形式（標準カメラ形式）
             {
-                pattern: /IMG[_\-\s](\d{4})(\d{2})(\d{2})[_\-\s](\d{2})(\d{2})(\d{2})/i,
+                pattern: /IMG[_\-\s](\d{4})(\d{2})(\d{2})[_\-\s](\d{2})[_:\-\.](\d{2})[_:\-\.](\d{2})/i,
                 format: 'IMG_YYYYMMDD_HHMMSS',
                 reliability: 0.95
             },
             
             // DSC_YYYYMMDD_HHMMSS形式
             {
-                pattern: /DSC[_\-\s](\d{4})(\d{2})(\d{2})[_\-\s](\d{2})(\d{2})(\d{2})/i,
+                pattern: /DSC[_\-\s](\d{4})(\d{2})(\d{2})[_\-\s](\d{2})[_:\-\.](\d{2})[_:\-\.](\d{2})/i,
                 format: 'DSC_YYYYMMDD_HHMMSS',
                 reliability: 0.95
             },
             
             // PHOTO_YYYY_MM_DD_HH_MM_SS形式
             {
-                pattern: /PHOTO[_\-\s](\d{4})[_\-](\d{1,2})[_\-](\d{1,2})[_\-\s](\d{1,2})[_\-](\d{1,2})[_\-](\d{1,2})/i,
+                pattern: /PHOTO[_\-\s](\d{4})[_\-](\d{1,2})[_\-](\d{1,2})[_\-\s](\d{1,2})[_\-\.](\d{1,2})[_\-\.](\d{1,2})/i,
                 format: 'PHOTO_YYYY_MM_DD_HH_MM_SS',
                 reliability: 0.9
             },
             
             // Screenshot_YYYY-MM-DD-HH-MM-SS形式
             {
-                pattern: /Screenshot[_\-\s](\d{4})[_\-](\d{1,2})[_\-](\d{1,2})[_\-\s](\d{1,2})[_\-](\d{1,2})[_\-](\d{1,2})/i,
+                pattern: /Screenshot[_\-\s](\d{4})[_\-](\d{1,2})[_\-](\d{1,2})[_\-\s](\d{1,2})[_\-\.](\d{1,2})[_\-\.](\d{1,2})/i,
                 format: 'Screenshot_YYYY-MM-DD-HH-MM-SS',
                 reliability: 0.9
             },
             
             // YYYY-MM-DD_HH-MM形式（分まで）
             {
-                pattern: /(\d{4})[_\-\/](\d{1,2})[_\-\/](\d{1,2})[_\s\-T](\d{1,2})[_:\-](\d{1,2})/,
+                pattern: /(\d{4})[_\-\/](\d{1,2})[_\-\/](\d{1,2})[_\s\-T](\d{1,2})[_:\-\.](\d{1,2})/,
                 format: 'YYYY-MM-DD HH:MM',
                 reliability: 0.85
             },
             
             // YYYYMMDD_HHMM形式（分まで）
             {
-                pattern: /(\d{4})(\d{2})(\d{2})[_\-\s](\d{2})(\d{2})(?!\d)/,
+                pattern: /(\d{4})(\d{2})(\d{2})[_\-\s](\d{2})[_:\-\.](\d{2})(?!\d)/,
                 format: 'YYYYMMDD_HHMM',
                 reliability: 0.85
             },
             
             // VID_YYYYMMDD_HHMMSS形式（動画）
             {
-                pattern: /VID[_\-\s](\d{4})(\d{2})(\d{2})[_\-\s](\d{2})(\d{2})(\d{2})/i,
+                pattern: /VID[_\-\s](\d{4})(\d{2})(\d{2})[_\-\s](\d{2})[_:\-\.](\d{2})[_:\-\.](\d{2})/i,
                 format: 'VID_YYYYMMDD_HHMMSS',
                 reliability: 0.95
             },
             
             // 時間付きISO形式（YYYY-MM-DDTHH:MM:SS）
             {
-                pattern: /(\d{4})[_\-](\d{2})[_\-](\d{2})T(\d{2}):(\d{2}):(\d{2})/,
+                pattern: /(\d{4})[_\-](\d{2})[_\-](\d{2})T(\d{2})[:\.](\d{2})[:\.](\d{2})/,
                 format: 'ISO_DATETIME',
                 reliability: 0.95
             },
@@ -90,6 +90,20 @@ class DateTimeEstimator {
                 pattern: /(\d{4})[_\-\/](\d{1,2})[_\-\/](\d{1,2})[_\s](\d{1,2})[時h](\d{1,2})[分m](\d{1,2})[秒s]/,
                 format: 'YYYY-MM-DD HH時MM分SS秒',
                 reliability: 0.9
+            },
+            
+            // YYYY年MM月DD日HH時MM分SS秒形式
+            {
+                pattern: /(\d{4})年(\d{1,2})月(\d{1,2})日(\d{1,2})時(\d{1,2})分(\d{1,2})秒/,
+                format: 'YYYY年MM月DD日HH時MM分SS秒',
+                reliability: 0.9
+            },
+            
+            // スペース区切り形式（YYYY MM DD HH MM SS）
+            {
+                pattern: /(\d{4})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})/,
+                format: 'YYYY MM DD HH MM SS',
+                reliability: 0.8
             },
             
             // === 日付のみパターン（時間なし） ===
@@ -106,6 +120,13 @@ class DateTimeEstimator {
                 pattern: /(\d{4})(\d{2})(\d{2})(?![_\-\d])/,
                 format: 'YYYYMMDD',
                 reliability: 0.7
+            },
+            
+            // YYYY年MM月DD日形式
+            {
+                pattern: /(\d{4})年(\d{1,2})月(\d{1,2})日/,
+                format: 'YYYY年MM月DD日',
+                reliability: 0.8
             },
             
             // WhatsApp形式: IMG-YYYYMMDD-WAxxxx
@@ -293,6 +314,8 @@ class DateTimeEstimator {
                 case 'Screenshot_YYYY-MM-DD-HH-MM-SS':
                 case 'ISO_DATETIME':
                 case 'YYYY-MM-DD HH時MM分SS秒':
+                case 'YYYY年MM月DD日HH時MM分SS秒':
+                case 'YYYY MM DD HH MM SS':
                     date = new Date(
                         parseInt(match[1]), // year
                         parseInt(match[2]) - 1, // month (0-based)
@@ -319,6 +342,7 @@ class DateTimeEstimator {
 
                 case 'YYYY-MM-DD':
                 case 'YYYYMMDD':
+                case 'YYYY年MM月DD日':
                 case 'WhatsApp':
                     date = new Date(
                         parseInt(match[1]), // year
