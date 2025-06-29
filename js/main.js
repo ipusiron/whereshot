@@ -8,6 +8,7 @@ class WhereShotApp {
         this.currentFile = null;
         this.currentExifData = null;
         this.currentSunData = null;
+        this.currentEstimationResult = null;
         this.isInitialized = false;
     }
 
@@ -151,6 +152,12 @@ class WhereShotApp {
         const calculateSunBtn = document.getElementById('calculate-sun-btn');
         calculateSunBtn?.addEventListener('click', () => {
             this.calculateSunPosition();
+        });
+
+        // 推定日時セットボタン
+        const setEstimatedDateTimeBtn = document.getElementById('set-estimated-datetime-btn');
+        setEstimatedDateTimeBtn?.addEventListener('click', () => {
+            this.setEstimatedDateTime();
         });
 
         // 地図レイヤー選択
@@ -353,8 +360,13 @@ class WhereShotApp {
             const exifData = await window.WhereShotExifParser.extractExifData(file);
             this.currentExifData = exifData;
 
+            // 日時推定を実行
+            const estimationResult = window.WhereShotDateTimeEstimator.estimateDateTime(exifData, file);
+            this.currentEstimationResult = estimationResult;
+
             // UI更新
             this.updateExifDisplay(exifData);
+            this.updateDateTimeEstimationDisplay(estimationResult);
             this.showAnalysisResults();
 
             // GPS情報があれば地図に表示
@@ -362,9 +374,9 @@ class WhereShotApp {
                 this.displayLocationOnMap(exifData);
             }
 
-            // 撮影日時があれば自動入力
-            if (exifData.dateTime.original) {
-                this.setAnalysisDateTime(exifData.dateTime.original);
+            // 推定日時があれば自動入力
+            if (estimationResult.estimated) {
+                this.setAnalysisDateTime(estimationResult.estimated);
             }
 
             // 外部リンクを更新
@@ -441,6 +453,140 @@ class WhereShotApp {
 
             const settingsText = settings.length > 0 ? settings.join(', ') : '設定情報なし';
             settingsInfo.textContent = window.WhereShotUtils.SecurityUtils.escapeHtml(settingsText);
+        }
+    }
+
+    /**
+     * 日時推定結果を表示
+     * @param {object} estimationResult - 推定結果
+     */
+    updateDateTimeEstimationDisplay(estimationResult) {
+        // 推定日時値
+        const estimatedValueElement = document.getElementById('estimated-datetime-value');
+        if (estimatedValueElement) {
+            if (estimationResult.estimated) {
+                estimatedValueElement.textContent = estimationResult.formatted.estimated;
+                estimatedValueElement.style.color = 'var(--text-primary)';
+            } else {
+                estimatedValueElement.textContent = '推定できませんでした';
+                estimatedValueElement.style.color = 'var(--text-muted)';
+            }
+        }
+
+        // 信頼度
+        const confidenceElement = document.getElementById('estimation-confidence');
+        if (confidenceElement) {
+            const confidencePercent = Math.round(estimationResult.confidence * 100);
+            let confidenceLevel = 'low';
+            
+            if (confidencePercent >= 80) {
+                confidenceLevel = 'high';
+            } else if (confidencePercent >= 60) {
+                confidenceLevel = 'medium';
+            }
+
+            confidenceElement.textContent = `信頼度: ${confidencePercent}%`;
+            confidenceElement.className = `estimation-confidence ${confidenceLevel}`;
+        }
+
+        // 推定日時セットボタンの表示制御
+        const setButton = document.getElementById('set-estimated-datetime-btn');
+        if (setButton) {
+            setButton.style.display = estimationResult.estimated ? 'inline-flex' : 'none';
+        }
+
+        // 警告メッセージ
+        this.displayEstimationWarnings(estimationResult.warnings);
+
+        // ソースリスト
+        this.displayDateTimeSources(estimationResult.formatted.sources);
+    }
+
+    /**
+     * 推定警告を表示
+     * @param {Array} warnings - 警告配列
+     */
+    displayEstimationWarnings(warnings) {
+        const warningsContainer = document.getElementById('estimation-warnings');
+        if (!warningsContainer) return;
+
+        if (warnings.length === 0) {
+            warningsContainer.style.display = 'none';
+            return;
+        }
+
+        warningsContainer.style.display = 'block';
+        warningsContainer.innerHTML = warnings.map(warning => {
+            const iconMap = {
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+
+            return `
+                <div class="warning-item ${warning.severity}">
+                    <span class="warning-icon">${iconMap[warning.severity]}</span>
+                    <span class="warning-message">${window.WhereShotUtils.SecurityUtils.escapeHtml(warning.message)}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * 日時ソースを表示
+     * @param {Array} sources - ソース配列
+     */
+    displayDateTimeSources(sources) {
+        const sourcesContainer = document.getElementById('datetime-sources');
+        if (!sourcesContainer) return;
+
+        if (sources.length === 0) {
+            sourcesContainer.innerHTML = '<div class="source-item"><span class="source-type">日時情報が見つかりませんでした</span></div>';
+            return;
+        }
+
+        sourcesContainer.innerHTML = sources.map(source => {
+            let reliabilityClass = 'low';
+            const reliability = parseInt(source.reliability);
+            
+            if (reliability >= 80) {
+                reliabilityClass = 'high';
+            } else if (reliability >= 60) {
+                reliabilityClass = 'medium';
+            }
+
+            return `
+                <div class="source-item">
+                    <span class="source-type">${window.WhereShotUtils.SecurityUtils.escapeHtml(source.description)}</span>
+                    <span class="source-datetime">${window.WhereShotUtils.SecurityUtils.escapeHtml(source.date)}</span>
+                    <span class="source-reliability ${reliabilityClass}">${source.reliability}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * 推定日時を解析日時にセット
+     */
+    setEstimatedDateTime() {
+        if (!this.currentEstimationResult || !this.currentEstimationResult.estimated) {
+            window.WhereShotUtils.UIUtils.showError('推定日時がありません');
+            return;
+        }
+
+        try {
+            this.setAnalysisDateTime(this.currentEstimationResult.estimated);
+            window.WhereShotUtils.UIUtils.showSuccess('推定日時を解析日時にセットしました');
+
+            // 太陽位置の自動計算
+            if (this.hasValidLocation()) {
+                setTimeout(() => {
+                    this.calculateSunPosition();
+                }, 500);
+            }
+        } catch (error) {
+            console.error('[WhereShot] Set estimated datetime error:', error);
+            window.WhereShotUtils.UIUtils.showError('推定日時のセットに失敗しました');
         }
     }
 
@@ -767,6 +913,7 @@ class WhereShotApp {
             this.currentFile = null;
             this.currentExifData = null;
             this.currentSunData = null;
+            this.currentEstimationResult = null;
 
             // UIをリセット
             this.resetUI();
@@ -822,6 +969,33 @@ class WhereShotApp {
                 element.textContent = '-';
             }
         });
+
+        // 推定日時情報をクリア
+        const estimatedValueElement = document.getElementById('estimated-datetime-value');
+        if (estimatedValueElement) {
+            estimatedValueElement.textContent = '-';
+        }
+
+        const confidenceElement = document.getElementById('estimation-confidence');
+        if (confidenceElement) {
+            confidenceElement.textContent = '-';
+            confidenceElement.className = 'estimation-confidence';
+        }
+
+        const setButton = document.getElementById('set-estimated-datetime-btn');
+        if (setButton) {
+            setButton.style.display = 'none';
+        }
+
+        const warningsContainer = document.getElementById('estimation-warnings');
+        if (warningsContainer) {
+            warningsContainer.style.display = 'none';
+        }
+
+        const sourcesContainer = document.getElementById('datetime-sources');
+        if (sourcesContainer) {
+            sourcesContainer.innerHTML = '<div class="source-item"><span class="source-type">解析待機中...</span></div>';
+        }
 
         // 入力をクリア
         const analysisDate = document.getElementById('analysis-date');

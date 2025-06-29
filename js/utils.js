@@ -159,10 +159,37 @@ const URLUtils = {
     generateNASAWorldviewURL: (lat, lng, date) => {
         if (!lat || !lng) return '#';
         
+        // 日付をYYYY-MM-DD形式に変換
         const dateStr = date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-        const zoom = 8;
         
-        return `https://worldview.earthdata.nasa.gov/?v=${lng-2},${lat-2},${lng+2},${lat+2}&t=${dateStr}&l=MODIS_Aqua_CorrectedReflectance_TrueColor,MODIS_Terra_CorrectedReflectance_TrueColor&z=${zoom}`;
+        // 座標範囲を計算（適度なズームレベルになるよう調整）
+        const margin = 1.0; // 度単位での表示範囲
+        const minLon = lng - margin;
+        const minLat = lat - margin;
+        const maxLon = lng + margin;
+        const maxLat = lat + margin;
+        
+        // 確実に表示されるレイヤーの組み合わせ
+        const layers = [
+            'MODIS_Terra_CorrectedReflectance_TrueColor',
+            'MODIS_Aqua_CorrectedReflectance_TrueColor',
+            'VIIRS_SNPP_CorrectedReflectance_TrueColor',
+            'Reference_Labels_15m',           // 地名ラベル
+            'Reference_Features_15m'          // 海岸線・国境
+        ];
+        
+        // URLを構築（zパラメータを除去し、vパラメータのみ使用）
+        const baseURL = 'https://worldview.earthdata.nasa.gov/';
+        const params = new URLSearchParams({
+            'v': `${minLon},${minLat},${maxLon},${maxLat}`,
+            't': dateStr,
+            'l': layers.join(',')
+        });
+        
+        const finalURL = `${baseURL}?${params.toString()}`;
+        
+        console.log('[NASA Worldview] Generated URL:', finalURL);
+        return finalURL;
     },
 
     /**

@@ -103,6 +103,36 @@
                             <div id="settings-info" class="info-content">-</div>
                         </div>
                     </div>
+
+                    <!-- 推定日時セクション -->
+                    <div class="datetime-estimation-section">
+                        <h3>🔍 日時推定</h3>
+                        <div class="estimation-result">
+                            <div class="estimated-datetime">
+                                <div class="estimation-header">
+                                    <h4>推定日時</h4>
+                                    <button id="set-estimated-datetime-btn" class="btn btn-primary" style="display: none;">
+                                        📅 解析日時にセット
+                                    </button>
+                                </div>
+                                <div id="estimated-datetime-value" class="estimation-value">-</div>
+                                <div id="estimation-confidence" class="estimation-confidence">-</div>
+                            </div>
+                            
+                            <div id="estimation-warnings" class="estimation-warnings" style="display: none;">
+                                <!-- 警告メッセージがここに表示される -->
+                            </div>
+                            
+                            <div class="estimation-sources">
+                                <h5>日時ソース</h5>
+                                <div id="datetime-sources" class="sources-list">
+                                    <div class="source-item">
+                                        <span class="source-type">解析待機中...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- 地図パネル -->
@@ -228,6 +258,7 @@
     <!-- アプリケーションスクリプト -->
     <script src="js/utils.js"></script>
     <script src="js/exif-parser.js"></script>
+    <script src="js/datetime-estimator.js"></script>
     <script src="js/sun-calculator.js"></script>
     <script src="js/map-controller.js"></script>
     <script src="js/main.js"></script>
