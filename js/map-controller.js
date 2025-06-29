@@ -1,5 +1,5 @@
 /**
- * WhereShot - 地図制御モジュール（修正版）
+ * WhereShot - 地図制御モジュール（改善版）
  * Created by IPUSIRON - セキュリティ重視のOSINTツール
  */
 
@@ -40,7 +40,7 @@ class MapController {
     }
 
     /**
-     * 実際の地図初期化処理
+     * 実際の地図初期化処理（改善版）
      * @param {string} containerId - 地図コンテナのID
      * @param {object} options - 初期化オプション
      */
@@ -58,10 +58,10 @@ class MapController {
 
             const mapOptions = { ...defaultOptions, ...options };
 
-            // 地図コンテナの準備を待機
+            // 地図コンテナの準備を待機（改善版）
             const container = await this._waitForContainer(containerId);
             
-            // コンテナが表示されるまで待機
+            // コンテナが表示されるまで待機（改善版）
             await this._waitForContainerVisible(container);
 
             // 地図を作成
@@ -130,23 +130,28 @@ class MapController {
                 }
             };
 
-            // 最大10秒待機
+            // 最大5秒待機（短縮）
             setTimeout(() => {
                 reject(new Error(`Map container ${containerId} not found within timeout`));
-            }, 10000);
+            }, 5000);
 
             checkContainer();
         });
     }
 
     /**
-     * コンテナが表示されるまで待機
+     * コンテナが表示されるまで待機（改善版）
      * @param {HTMLElement} container - コンテナ要素
      * @returns {Promise<void>}
      */
     _waitForContainerVisible(container) {
         return new Promise((resolve) => {
+            let attempts = 0;
+            const maxAttempts = 20; // 最大20回まで（2秒）
+            const checkInterval = 100; // 100ms間隔
+
             const checkVisible = () => {
+                attempts++;
                 const rect = container.getBoundingClientRect();
                 const style = window.getComputedStyle(container);
                 const isVisible = rect.width > 0 && 
@@ -157,17 +162,23 @@ class MapController {
                                 style.visibility !== 'hidden';
                 
                 if (isVisible) {
-                    console.log('[WhereShot] Container is visible:', {
+                    console.log(`[WhereShot] Container is visible after ${attempts} attempts:`, {
                         width: rect.width,
                         height: rect.height,
                         offsetWidth: container.offsetWidth,
                         offsetHeight: container.offsetHeight
                     });
-                    // 少し追加で待機してレンダリングを確実にする
-                    setTimeout(resolve, 100);
+                    resolve();
+                } else if (attempts >= maxAttempts) {
+                    // 最大試行回数に達した場合は強制的に進む
+                    console.warn(`[WhereShot] Container visibility timeout after ${attempts} attempts, proceeding anyway`);
+                    resolve();
                 } else {
-                    console.log('[WhereShot] Waiting for container to be visible...');
-                    setTimeout(checkVisible, 100);
+                    // 進捗をログ出力（5回ごと）
+                    if (attempts % 5 === 0) {
+                        console.log(`[WhereShot] Still waiting for container visibility... (${attempts}/${maxAttempts})`);
+                    }
+                    setTimeout(checkVisible, checkInterval);
                 }
             };
 
@@ -176,18 +187,26 @@ class MapController {
     }
 
     /**
-     * 地図の準備完了を待機
+     * 地図の準備完了を待機（改善版）
      * @returns {Promise<void>}
      */
     _waitForMapReady() {
         return new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                console.warn('[WhereShot] Map ready timeout, proceeding anyway');
+                this._performFinalSizeCalculation();
+                resolve();
+            }, 3000); // 3秒タイムアウト
+
             if (this.map._loaded) {
                 // 既に読み込み完了している場合
+                clearTimeout(timeout);
                 this._performFinalSizeCalculation();
                 resolve();
             } else {
                 // 読み込み完了を待機
                 this.map.whenReady(() => {
+                    clearTimeout(timeout);
                     console.log('[WhereShot] Map whenReady event fired');
                     this._performFinalSizeCalculation();
                     resolve();
@@ -197,47 +216,58 @@ class MapController {
     }
 
     /**
-     * 最終的なサイズ計算を実行
+     * 最終的なサイズ計算を実行（改善版）
      */
     _performFinalSizeCalculation() {
-        // 複数回のサイズ計算を段階的に実行
-        const sizeCalculationSteps = [100, 300, 500];
+        // 即座に1回実行
+        this.safeInvalidateSize();
+
+        // 追加で段階的に実行（回数を減らす）
+        const sizeCalculationSteps = [200, 500];
         
         sizeCalculationSteps.forEach((delay, index) => {
             setTimeout(() => {
-                if (this.map && this.isInitialized) {
-                    try {
-                        this.map.invalidateSize();
-                        console.log(`[WhereShot] Size calculation step ${index + 1} completed`);
-                    } catch (error) {
-                        console.warn(`[WhereShot] Error in size calculation step ${index + 1}:`, error);
-                    }
-                }
+                this.safeInvalidateSize();
+                console.log(`[WhereShot] Additional size calculation ${index + 1} completed`);
             }, delay);
         });
     }
 
     /**
-     * 地図のサイズを安全に再計算
+     * 地図のサイズを安全に再計算（改善版）
      */
     safeInvalidateSize() {
-        if (!this.map || !this.isInitialized) {
-            console.log('[WhereShot] Map not ready for size invalidation');
-            return;
+        if (!this.map) {
+            console.log('[WhereShot] Map not available for size invalidation');
+            return false;
         }
 
-        // コンテナが表示されているかチェック
-        const container = this.map.getContainer();
-        if (!container || container.offsetWidth === 0 || container.offsetHeight === 0) {
-            console.log('[WhereShot] Container not visible, skipping size invalidation');
-            return;
+        if (!this.isInitialized) {
+            console.log('[WhereShot] Map not initialized for size invalidation');
+            return false;
         }
 
         try {
+            // コンテナの状態をチェック
+            const container = this.map.getContainer();
+            if (!container) {
+                console.log('[WhereShot] Map container not found');
+                return false;
+            }
+
+            const rect = container.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) {
+                console.log('[WhereShot] Container has zero dimensions, skipping size invalidation');
+                return false;
+            }
+
             this.map.invalidateSize();
-            console.log('[WhereShot] Map size invalidated safely');
+            console.log('[WhereShot] Map size invalidated successfully');
+            return true;
+
         } catch (error) {
             console.warn('[WhereShot] Error invalidating map size:', error);
+            return false;
         }
     }
 
