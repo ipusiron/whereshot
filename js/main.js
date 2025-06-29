@@ -10,6 +10,7 @@ class WhereShotApp {
     this.currentSunData = null;
     this.currentEstimationResult = null;
     this.isInitialized = false;
+    this.mapInitialized = false;
   }
 
   /**
@@ -26,20 +27,20 @@ class WhereShotApp {
         });
       }
 
-      // 観測所データを読み込む（エラーハンドリング強化）
-      await this.loadStationsData();
-
-      // UIイベントリスナーを設定
+      // UIイベントリスナーを設定（地図より先に）
       this.setupEventListeners();
 
-      // 地図を初期化
-      this.initializeMap();
+      // 観測所データを読み込む（エラーハンドリング強化）
+      await this.loadStationsData();
 
       // セキュリティ設定
       this.setupSecurity();
 
       // 外部リンクの初期設定
       this.initializeExternalLinks();
+
+      // 地図の初期化は最後に、かつ非同期で
+      this.initializeMapWhenReady();
 
       this.isInitialized = true;
       console.log('[WhereShot] Application initialized successfully');
@@ -51,6 +52,41 @@ class WhereShotApp {
       window.WhereShotUtils.UIUtils.showError(
         'アプリケーションの初期化に失敗しました。HTTPサーバー経由でアクセスしてください。'
       );
+    }
+  }
+
+  /**
+   * 地図を適切なタイミングで初期化
+   */
+  async initializeMapWhenReady() {
+    try {
+      // 少し遅らせて、他の要素が完全に準備されてから地図を初期化
+      setTimeout(async () => {
+        await this.initializeMap();
+      }, 500);
+    } catch (error) {
+      console.error('[WhereShot] Map initialization deferred error:', error);
+    }
+  }
+
+  /**
+   * 地図を初期化
+   */
+  async initializeMap() {
+    try {
+      console.log('[WhereShot] Initializing map...');
+      
+      await window.WhereShotMapController.initializeMap('map', {
+        center: [35.6762, 139.6503], // 東京
+        zoom: 10,
+      });
+      
+      this.mapInitialized = true;
+      console.log('[WhereShot] Map initialization completed');
+      
+    } catch (error) {
+      console.error('[WhereShot] Map initialization failed:', error);
+      window.WhereShotUtils.UIUtils.showError('地図の初期化に失敗しました');
     }
   }
 
@@ -440,6 +476,24 @@ class WhereShotApp {
     document.addEventListener('whereshot:directionChanged', (e) => {
       this.onDirectionChanged(e.detail);
     });
+
+    // 地図初期化完了イベント
+    document.addEventListener('whereshot:mapInitialized', (e) => {
+      console.log('[WhereShot] Map initialization event received');
+      this.mapInitialized = true;
+      
+      // 地図が初期化された後にサイズを再計算
+      setTimeout(() => {
+        window.WhereShotMapController.safeInvalidateSize();
+      }, 200);
+    });
+
+    // 地図初期化失敗イベント
+    document.addEventListener('whereshot:mapInitializationFailed', (e) => {
+      console.error('[WhereShot] Map initialization failed event received:', e.detail);
+      this.mapInitialized = false;
+      window.WhereShotUtils.UIUtils.showError('地図の初期化に失敗しました');
+    });
   }
 
   /**
@@ -498,21 +552,6 @@ class WhereShotApp {
         this.showHelpModal();
       }
     });
-  }
-
-  /**
-   * 地図を初期化
-   */
-  initializeMap() {
-    try {
-      window.WhereShotMapController.initializeMap('map', {
-        center: [35.6762, 139.6503], // 東京
-        zoom: 10,
-      });
-    } catch (error) {
-      console.error('[WhereShot] Map initialization failed:', error);
-      window.WhereShotUtils.UIUtils.showError('地図の初期化に失敗しました');
-    }
   }
 
   /**
@@ -888,24 +927,65 @@ class WhereShotApp {
   /**
    * 解析結果を表示
    */
-  showAnalysisResults() {
+  async showAnalysisResults() {
     const resultsDiv = document.getElementById('analysis-results');
     if (resultsDiv) {
       resultsDiv.style.display = 'block';
+      resultsDiv.classList.add('visible');
 
-      // 地図のサイズを再計算
-      setTimeout(() => {
-        if (
-          window.WhereShotMapController &&
-          window.WhereShotMapController.map
-        ) {
-          window.WhereShotMapController.map.invalidateSize();
-          console.log('[WhereShot] Map resized after showing results');
-        }
-      }, 100);
+      // 地図のサイズを安全に再計算（地図が初期化されてから）
+      if (this.mapInitialized) {
+        // 段階的に複数回実行
+        const delays = [200, 500, 1000];
+        delays.forEach(delay => {
+          setTimeout(() => {
+            window.WhereShotMapController.safeInvalidateSize();
+          }, delay);
+        });
+      } else {
+        // 地図がまだ初期化されていない場合は、初期化完了を待つ
+        this.waitForMapAndResize();
+      }
 
       // スムーズスクロール
-      resultsDiv.scrollIntoView({ behavior: 'smooth' });
+      setTimeout(() => {
+        resultsDiv.scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    }
+  }
+
+  /**
+   * 地図の初期化を待ってサイズを再計算
+   */
+  async waitForMapAndResize() {
+    try {
+      // 地図の初期化完了を待機（最大15秒）
+      const maxWait = 15000;
+      const checkInterval = 500;
+      let waitTime = 0;
+
+      while (!this.mapInitialized && waitTime < maxWait) {
+        await new Promise(resolve => setTimeout(resolve, checkInterval));
+        waitTime += checkInterval;
+        
+        if (waitTime % 2000 === 0) {
+          console.log(`[WhereShot] Still waiting for map initialization... (${waitTime/1000}s)`);
+        }
+      }
+
+      if (this.mapInitialized) {
+        // 段階的にサイズ再計算
+        const delays = [200, 500, 1000];
+        delays.forEach(delay => {
+          setTimeout(() => {
+            window.WhereShotMapController.safeInvalidateSize();
+          }, delay);
+        });
+      } else {
+        console.warn('[WhereShot] Map initialization timeout');
+      }
+    } catch (error) {
+      console.error('[WhereShot] Error waiting for map:', error);
     }
   }
 
@@ -913,25 +993,61 @@ class WhereShotApp {
    * 地図に位置を表示
    * @param {object} exifData - Exif情報
    */
-  displayLocationOnMap(exifData) {
+  async displayLocationOnMap(exifData) {
     const lat = exifData.gps.latitude;
     const lng = exifData.gps.longitude;
 
-    window.WhereShotMapController.setLocation(lat, lng, {
-      type: 'photo',
-      accuracy: exifData.gps.accuracy,
-      dateTime: exifData.dateTime.original,
-      centerMap: true,
-      zoom: 15,
-    });
+    // 地図が初期化されるまで待機
+    if (!this.mapInitialized) {
+      console.log('[WhereShot] Waiting for map initialization before setting location...');
+      await this.waitForMapInitialization();
+    }
 
-    // GPS精度円を表示
-    if (exifData.gps.accuracy) {
-      window.WhereShotMapController.showAccuracyCircle(
-        lat,
-        lng,
-        exifData.gps.accuracy
-      );
+    if (this.mapInitialized) {
+      try {
+        window.WhereShotMapController.setLocation(lat, lng, {
+          type: 'photo',
+          accuracy: exifData.gps.accuracy,
+          dateTime: exifData.dateTime.original,
+          centerMap: true,
+          zoom: 15,
+        });
+
+        // GPS精度円を表示
+        if (exifData.gps.accuracy) {
+          window.WhereShotMapController.showAccuracyCircle(
+            lat,
+            lng,
+            exifData.gps.accuracy
+          );
+        }
+      } catch (error) {
+        console.error('[WhereShot] Error setting location on map:', error);
+        window.WhereShotUtils.UIUtils.showError('地図への位置表示に失敗しました');
+      }
+    }
+  }
+
+  /**
+   * 地図初期化の完了を待機
+   */
+  async waitForMapInitialization() {
+    const maxWait = 20000; // 20秒に延長
+    const checkInterval = 500;
+    let waitTime = 0;
+
+    while (!this.mapInitialized && waitTime < maxWait) {
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
+      waitTime += checkInterval;
+      
+      if (waitTime % 3000 === 0) {
+        console.log(`[WhereShot] Still waiting for map initialization... (${waitTime/1000}s)`);
+      }
+    }
+
+    if (!this.mapInitialized) {
+      console.error('[WhereShot] Map initialization timeout after 20 seconds');
+      throw new Error('地図の初期化がタイムアウトしました');
     }
   }
 
@@ -1080,6 +1196,11 @@ class WhereShotApp {
    */
   async calculateSunPosition() {
     try {
+      // 地図が初期化されているかチェック
+      if (!this.mapInitialized) {
+        throw new Error('地図が初期化されていません');
+      }
+
       const location = window.WhereShotMapController.getCurrentLocation();
       const analysisDate = document.getElementById('analysis-date');
 
@@ -1194,6 +1315,10 @@ class WhereShotApp {
    * @returns {boolean} 有効性
    */
   hasValidLocation() {
+    if (!this.mapInitialized) {
+      return false;
+    }
+    
     const location = window.WhereShotMapController.getCurrentLocation();
     return location && location.latitude && location.longitude;
   }
@@ -1253,7 +1378,9 @@ class WhereShotApp {
       this.resetUI();
 
       // 地図をリセット
-      window.WhereShotMapController.resetMap();
+      if (this.mapInitialized) {
+        window.WhereShotMapController.resetMap();
+      }
 
       // パーサーデータをクリア
       window.WhereShotExifParser.clearData();
@@ -1276,6 +1403,7 @@ class WhereShotApp {
     const resultsDiv = document.getElementById('analysis-results');
     if (resultsDiv) {
       resultsDiv.style.display = 'none';
+      resultsDiv.classList.remove('visible');
     }
 
     // プレビューエリアを非表示
@@ -1345,6 +1473,12 @@ class WhereShotApp {
     const fileInput = document.getElementById('file-input');
     if (fileInput) {
       fileInput.value = '';
+    }
+
+    // 地図座標表示をリセット
+    const mapCoordinates = document.getElementById('map-coordinates');
+    if (mapCoordinates) {
+      mapCoordinates.textContent = 'クリックして座標を取得';
     }
   }
 

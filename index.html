@@ -135,7 +135,7 @@
                     </div>
                 </section>
 
-                <!-- 地図パネル -->
+                <!-- 地図パネル（修正版） -->
                 <section class="map-panel">
                     <h2>🗺️ 撮影地点マップ</h2>
                     <div class="map-controls">
@@ -147,9 +147,14 @@
                             <option value="terrain">地形図</option>
                         </select>
                     </div>
-                    <div id="map" class="map-container"></div>
-                    <div class="map-info">
-                        <small id="map-coordinates">クリックして座標を取得</small>
+                    <!-- 地図コンテナ - 修正版 -->
+                    <div class="map-wrapper">
+                        <div id="map" class="map-container map-initializing" 
+                             style="width: 100%; height: 500px; min-height: 400px; background: var(--bg-card); position: relative;">
+                        </div>
+                        <div class="map-info">
+                            <small id="map-coordinates">地図を読み込み中...</small>
+                        </div>
                     </div>
                 </section>
 
@@ -201,7 +206,7 @@
                             <h4>🔍 その他の検証ツール</h4>
                             <a id="streetview-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-external">Street View</a>
                             <a id="reverse-image-link" href="https://images.google.com/" target="_blank" rel="noopener noreferrer" class="btn btn-external">Google画像検索を開く</a>
-<small>※ プレビュー画像を右クリック → 「Googleで画像を検索」 で利用できます</small>
+                            <small>※ プレビュー画像を右クリック → 「Googleで画像を検索」 で利用できます</small>
                         </div>
                     </div>
                 </section>
@@ -214,7 +219,7 @@
         <!-- フッター -->
         <footer class="app-footer">
             <div class="footer" style="text-align: center;">
-                🔗 GitHubリポジトリはこちら（<a href="https://github.com/ipusiron/osm-infra-viewer" target="_blank" style="color: #007bff; text-decoration: none;">ipusiron/osm-infra-viewer</a>）
+                🔗 GitHubリポジトリはこちら（<a href="https://github.com/ipusiron/whereshot" target="_blank" style="color: #007bff; text-decoration: none;">ipusiron/whereshot</a>）
             </div>
         </footer>
     </div>
@@ -263,5 +268,45 @@
     <script src="js/sun-calculator.js"></script>
     <script src="js/map-controller.js"></script>
     <script src="js/main.js"></script>
+
+    <!-- 地図初期化管理スクリプト -->
+    <script>
+        // 地図初期化の状態管理
+        document.addEventListener('DOMContentLoaded', function() {
+            const mapContainer = document.getElementById('map');
+            
+            // 地図初期化完了イベントリスナー
+            document.addEventListener('whereshot:mapInitialized', function() {
+                if (mapContainer) {
+                    mapContainer.classList.remove('map-initializing');
+                    mapContainer.classList.add('map-ready');
+                    
+                    // 座標表示を更新
+                    const mapCoordinates = document.getElementById('map-coordinates');
+                    if (mapCoordinates) {
+                        mapCoordinates.textContent = 'クリックして座標を取得';
+                    }
+                    
+                    console.log('[WhereShot] Map UI state updated to ready');
+                }
+            });
+
+            // 地図初期化失敗イベントリスナー
+            document.addEventListener('whereshot:mapInitializationFailed', function(e) {
+                if (mapContainer) {
+                    mapContainer.classList.remove('map-initializing');
+                    mapContainer.classList.add('map-error');
+                    
+                    // エラーメッセージを表示
+                    const mapCoordinates = document.getElementById('map-coordinates');
+                    if (mapCoordinates) {
+                        mapCoordinates.textContent = '地図の読み込みに失敗しました';
+                    }
+                    
+                    console.error('[WhereShot] Map initialization failed:', e.detail);
+                }
+            });
+        });
+    </script>
 </body>
 </html>

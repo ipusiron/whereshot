@@ -1,5 +1,5 @@
 /**
- * WhereShot - 地図制御モジュール
+ * WhereShot - 地図制御モジュール（修正版）
  * Created by IPUSIRON - セキュリティ重視のOSINTツール
  */
 
@@ -15,6 +15,8 @@ class MapController {
         this.layers = {};
         this.markers = [];
         this.overlays = [];
+        this.isInitialized = false;
+        this.initializationPromise = null;
     }
 
     /**
@@ -22,8 +24,30 @@ class MapController {
      * @param {string} containerId - 地図コンテナのID
      * @param {object} options - 初期化オプション
      */
-    initializeMap(containerId, options = {}) {
+    async initializeMap(containerId, options = {}) {
+        // 既に初期化中または完了している場合は待機または早期リターン
+        if (this.initializationPromise) {
+            return this.initializationPromise;
+        }
+
+        if (this.isInitialized) {
+            console.log('[WhereShot] Map already initialized');
+            return Promise.resolve();
+        }
+
+        this.initializationPromise = this._performMapInitialization(containerId, options);
+        return this.initializationPromise;
+    }
+
+    /**
+     * 実際の地図初期化処理
+     * @param {string} containerId - 地図コンテナのID
+     * @param {object} options - 初期化オプション
+     */
+    async _performMapInitialization(containerId, options) {
         try {
+            console.log('[WhereShot] Starting map initialization...');
+
             // デフォルトオプション
             const defaultOptions = {
                 center: [35.6762, 139.6503], // 東京
@@ -34,11 +58,11 @@ class MapController {
 
             const mapOptions = { ...defaultOptions, ...options };
 
-            // 地図コンテナが表示されるまで待機
-            const container = document.getElementById(containerId);
-            if (!container) {
-                throw new Error(`Map container ${containerId} not found`);
-            }
+            // 地図コンテナの準備を待機
+            const container = await this._waitForContainer(containerId);
+            
+            // コンテナが表示されるまで待機
+            await this._waitForContainerVisible(container);
 
             // 地図を作成
             this.map = L.map(containerId, {
@@ -60,29 +84,160 @@ class MapController {
             // コントロールを追加
             this.addCustomControls();
 
-            // 地図のサイズを強制的に再計算
-            setTimeout(() => {
-                if (this.map) {
-                    this.map.invalidateSize();
-                    console.log('[WhereShot] Map size invalidated');
-                }
-            }, 100);
+            // 地図の準備完了を待機
+            await this._waitForMapReady();
 
-            // 地図が読み込まれた後の追加チェック
-            this.map.whenReady(() => {
-                setTimeout(() => {
-                    if (this.map) {
-                        this.map.invalidateSize();
-                        console.log('[WhereShot] Map ready and size invalidated');
-                    }
-                }, 200);
+            // 初期化完了フラグを設定
+            this.isInitialized = true;
+
+            // 初期化完了イベントを発火
+            this.dispatchEvent('mapInitialized', {
+                success: true,
+                containerId: containerId
             });
 
-            console.log('[WhereShot] Map initialized successfully');
+            console.log('[WhereShot] Map initialization completed successfully');
 
         } catch (error) {
             console.error('[WhereShot] Map initialization error:', error);
+            this.isInitialized = false;
+            this.initializationPromise = null;
+
+            // 初期化失敗イベントを発火
+            this.dispatchEvent('mapInitializationFailed', {
+                error: error.message,
+                containerId: containerId
+            });
+
             throw error;
+        }
+    }
+
+    /**
+     * コンテナの存在を待機
+     * @param {string} containerId - コンテナID
+     * @returns {Promise<HTMLElement>} コンテナ要素
+     */
+    _waitForContainer(containerId) {
+        return new Promise((resolve, reject) => {
+            const checkContainer = () => {
+                const container = document.getElementById(containerId);
+                if (container) {
+                    console.log('[WhereShot] Container found:', containerId);
+                    resolve(container);
+                } else {
+                    setTimeout(checkContainer, 50);
+                }
+            };
+
+            // 最大10秒待機
+            setTimeout(() => {
+                reject(new Error(`Map container ${containerId} not found within timeout`));
+            }, 10000);
+
+            checkContainer();
+        });
+    }
+
+    /**
+     * コンテナが表示されるまで待機
+     * @param {HTMLElement} container - コンテナ要素
+     * @returns {Promise<void>}
+     */
+    _waitForContainerVisible(container) {
+        return new Promise((resolve) => {
+            const checkVisible = () => {
+                const rect = container.getBoundingClientRect();
+                const style = window.getComputedStyle(container);
+                const isVisible = rect.width > 0 && 
+                                rect.height > 0 && 
+                                container.offsetWidth > 0 && 
+                                container.offsetHeight > 0 &&
+                                style.display !== 'none' &&
+                                style.visibility !== 'hidden';
+                
+                if (isVisible) {
+                    console.log('[WhereShot] Container is visible:', {
+                        width: rect.width,
+                        height: rect.height,
+                        offsetWidth: container.offsetWidth,
+                        offsetHeight: container.offsetHeight
+                    });
+                    // 少し追加で待機してレンダリングを確実にする
+                    setTimeout(resolve, 100);
+                } else {
+                    console.log('[WhereShot] Waiting for container to be visible...');
+                    setTimeout(checkVisible, 100);
+                }
+            };
+
+            checkVisible();
+        });
+    }
+
+    /**
+     * 地図の準備完了を待機
+     * @returns {Promise<void>}
+     */
+    _waitForMapReady() {
+        return new Promise((resolve) => {
+            if (this.map._loaded) {
+                // 既に読み込み完了している場合
+                this._performFinalSizeCalculation();
+                resolve();
+            } else {
+                // 読み込み完了を待機
+                this.map.whenReady(() => {
+                    console.log('[WhereShot] Map whenReady event fired');
+                    this._performFinalSizeCalculation();
+                    resolve();
+                });
+            }
+        });
+    }
+
+    /**
+     * 最終的なサイズ計算を実行
+     */
+    _performFinalSizeCalculation() {
+        // 複数回のサイズ計算を段階的に実行
+        const sizeCalculationSteps = [100, 300, 500];
+        
+        sizeCalculationSteps.forEach((delay, index) => {
+            setTimeout(() => {
+                if (this.map && this.isInitialized) {
+                    try {
+                        this.map.invalidateSize();
+                        console.log(`[WhereShot] Size calculation step ${index + 1} completed`);
+                    } catch (error) {
+                        console.warn(`[WhereShot] Error in size calculation step ${index + 1}:`, error);
+                    }
+                }
+            }, delay);
+        });
+    }
+
+    /**
+     * 地図のサイズを安全に再計算
+     */
+    safeInvalidateSize() {
+        if (!this.map || !this.isInitialized) {
+            console.log('[WhereShot] Map not ready for size invalidation');
+            return;
+        }
+
+        // コンテナが表示されているかチェック
+        const container = this.map.getContainer();
+        if (!container || container.offsetWidth === 0 || container.offsetHeight === 0) {
+            console.log('[WhereShot] Container not visible, skipping size invalidation');
+            return;
+        }
+
+        try {
+            this.map.invalidateSize();
+            console.log('[WhereShot] Map size invalidated safely');
+        } catch (error) {
+            console.warn('[WhereShot] Error invalidating map size:', error);
         }
     }
 
@@ -132,13 +287,13 @@ class MapController {
             this.onMapZoom(e);
         });
 
-        // ウィンドウリサイズイベント
+        // ウィンドウリサイズイベント（デバウンス付き）
+        let resizeTimer;
         window.addEventListener('resize', () => {
-            if (this.map) {
-                setTimeout(() => {
-                    this.map.invalidateSize();
-                }, 100);
-            }
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                this.safeInvalidateSize();
+            }, 250);
         });
     }
 
@@ -327,7 +482,7 @@ class MapController {
         const distance = window.WhereShotUtils.GeoUtils.calculateDistance(startLat, startLng, endLat, endLng);
         this.directionLine.bindPopup(`
             <strong>撮影方向</strong><br>
-            方位: ${direction.toFixed(1)}° (${window.WhereShotUtils.GeoUtils.degreesToCardinal ? window.WhereShotUtils.GeoUtils.degreesToCardinal(direction) : this.degreesToCardinal(direction)})<br>
+            方位: ${direction.toFixed(1)}° (${this.degreesToCardinal(direction)})<br>
             距離: ${distance.toFixed(0)}m
         `);
 
@@ -518,7 +673,7 @@ class MapController {
     }
 
     /**
-     * 度を方角に変換（ユーティリティ関数）
+     * 度を方角に変換
      * @param {number} degrees - 度
      * @returns {string} 方角
      */
@@ -567,7 +722,9 @@ class MapController {
         this.isDirectionMode = false;
 
         // カーソルをリセット
-        this.map.getContainer().style.cursor = '';
+        if (this.map) {
+            this.map.getContainer().style.cursor = '';
+        }
 
         console.log('[WhereShot] Map reset');
     }
@@ -594,6 +751,14 @@ class MapController {
      */
     getMapInstance() {
         return this.map;
+    }
+
+    /**
+     * 初期化状態を取得
+     * @returns {boolean} 初期化完了状態
+     */
+    isMapInitialized() {
+        return this.isInitialized;
     }
 }
 

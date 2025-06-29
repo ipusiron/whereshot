@@ -98,6 +98,18 @@ body {
     50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.6); }
 }
 
+/* 地図初期化用のアニメーション */
+@keyframes mapLoading {
+    0% { opacity: 0.6; }
+    50% { opacity: 0.8; }
+    100% { opacity: 0.6; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 /* ========== レイアウト ========== */
 .app-container {
     min-height: 100vh;
@@ -792,7 +804,7 @@ body {
     background: rgba(239, 68, 68, 0.1);
 }
 
-/* ========== 地図コントロール ========== */
+/* ========== 地図コントロール（修正版） ========== */
 .map-controls {
     display: flex;
     gap: 1rem;
@@ -818,17 +830,132 @@ body {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+/* 地図ラッパー */
+.map-wrapper {
+    position: relative;
+}
+
+/* 地図コンテナ（修正版） */
 .map-container {
+    width: 100%;
     height: 500px;
     min-height: 400px;
+    min-width: 300px;
     border-radius: 1.5rem;
     overflow: hidden;
     border: 1px solid var(--border);
     box-shadow: var(--shadow-glass);
     position: relative;
-    width: 100%;
+    background: var(--bg-card);
+    z-index: 1;
 }
 
+/* 地図初期化状態 */
+.map-container.map-initializing {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.map-container.map-initializing::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-card);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: mapLoading 1.5s infinite;
+}
+
+.map-container.map-initializing::after {
+    content: '🗺️ 地図を読み込み中...';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1001;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+    animation: pulse 1.5s infinite;
+}
+
+/* 地図準備完了状態 */
+.map-container.map-ready {
+    pointer-events: all;
+    opacity: 1;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.map-container.map-ready::before,
+.map-container.map-ready::after {
+    display: none;
+}
+
+/* 地図エラー状態 */
+.map-container.map-error {
+    pointer-events: none;
+    background: var(--bg-card);
+    border-color: var(--danger);
+}
+
+.map-container.map-error::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-card);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.map-container.map-error::after {
+    content: '❌ 地図の読み込みに失敗しました';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1001;
+    color: var(--danger);
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Leaflet固有の調整 */
+.leaflet-container {
+    background: var(--bg-card) !important;
+    font-family: var(--font-sans) !important;
+    border-radius: 1.5rem;
+}
+
+.leaflet-control-container {
+    font-family: var(--font-sans) !important;
+}
+
+.leaflet-popup-content-wrapper {
+    background: var(--bg-glass) !important;
+    backdrop-filter: var(--blur);
+    border: 1px solid var(--border);
+    border-radius: 1rem !important;
+    color: var(--text-primary) !important;
+}
+
+.leaflet-popup-tip {
+    background: var(--bg-glass) !important;
+    border: 1px solid var(--border);
+}
+
+/* 地図情報 */
 .map-info {
     margin-top: 1rem;
     text-align: center;
@@ -838,6 +965,51 @@ body {
     color: var(--text-muted);
     font-family: var(--font-mono);
     font-size: 0.8rem;
+    transition: var(--transition-fast);
+}
+
+.map-info small:hover {
+    color: var(--text-secondary);
+}
+
+/* 方向矢印（修正版） */
+.direction-arrow {
+    color: var(--danger) !important;
+    font-size: 1.2rem !important;
+    font-weight: bold !important;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.5) !important;
+    transform-origin: center !important;
+    z-index: 1000 !important;
+}
+
+/* 位置ポップアップ */
+.location-popup {
+    min-width: 200px;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+.location-popup h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.location-popup p {
+    margin: 0.25rem 0;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+.popup-actions {
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.popup-actions .btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
 }
 
 /* ========== 太陽位置計算 ========== */
@@ -1127,6 +1299,10 @@ body {
         align-self: flex-start;
         margin-top: 0.5rem;
     }
+
+    .preview-content {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1188,14 +1364,7 @@ body {
 .hidden { display: none !important; }
 .visible { display: block !important; }
 
-/* ========== 追加のモダン効果 ========== */
-.direction-arrow {
-    color: var(--danger);
-    font-size: 1.2rem;
-    text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
-}
-
-/* 成功・エラーメッセージのスタイル強化 */
+/* ========== 成功・エラーメッセージのスタイル強化 ========== */
 .success-message, .error-message {
     backdrop-filter: var(--blur);
     -webkit-backdrop-filter: var(--blur);
