@@ -315,9 +315,15 @@ class WhereShotApp {
         const datetimeInfo = document.getElementById('datetime-info');
         if (datetimeInfo) {
             if (exifData.dateTime.original) {
+                const formattedDate = window.WhereShotUtils.SecurityUtils.escapeHtml(
+                    exifData.dateTime.formatted.original || '不明'
+                );
+                const timezone = exifData.dateTime.timezone ? 
+                    window.WhereShotUtils.SecurityUtils.escapeHtml(exifData.dateTime.timezone) : '';
+                
                 datetimeInfo.innerHTML = `
-                    <strong>撮影日時:</strong> ${exifData.dateTime.formatted.original || '不明'}<br>
-                    ${exifData.dateTime.timezone ? `<strong>タイムゾーン:</strong> ${exifData.dateTime.timezone}` : ''}
+                    <strong>撮影日時:</strong> ${formattedDate}<br>
+                    ${timezone ? `<strong>タイムゾーン:</strong> ${timezone}` : ''}
                 `;
             } else {
                 datetimeInfo.textContent = '日時情報なし';
@@ -328,19 +334,26 @@ class WhereShotApp {
         const gpsInfo = document.getElementById('gps-info');
         if (gpsInfo) {
             if (exifData.gps.latitude && exifData.gps.longitude) {
+                const coordinates = window.WhereShotUtils.SecurityUtils.escapeHtml(
+                    exifData.gps.formatted.coordinates
+                );
+                const altitude = exifData.gps.altitude ? 
+                    window.WhereShotUtils.SecurityUtils.escapeHtml(exifData.gps.formatted.altitude) : '';
+                
                 gpsInfo.innerHTML = `
-                    <strong>座標:</strong><br>${exifData.gps.formatted.coordinates}<br>
-                    ${exifData.gps.altitude ? `<strong>高度:</strong> ${exifData.gps.formatted.altitude}` : ''}
+                    <strong>座標:</strong><br>${coordinates}<br>
+                    ${altitude ? `<strong>高度:</strong> ${altitude}` : ''}
                 `;
             } else {
                 gpsInfo.textContent = 'GPS情報なし';
             }
         }
 
-        // カメラ情報
+        // カメラ情報（文字化け対策済み）
         const cameraInfo = document.getElementById('camera-info');
         if (cameraInfo) {
-            cameraInfo.textContent = exifData.camera.formatted.camera || '不明';
+            const cameraText = exifData.camera.formatted.camera || '不明';
+            cameraInfo.textContent = window.WhereShotUtils.SecurityUtils.escapeHtml(cameraText);
         }
 
         // 撮影設定
@@ -352,7 +365,8 @@ class WhereShotApp {
             if (exifData.settings.formatted.shutter) settings.push(exifData.settings.formatted.shutter);
             if (exifData.settings.formatted.focalLength) settings.push(exifData.settings.formatted.focalLength);
 
-            settingsInfo.textContent = settings.length > 0 ? settings.join(', ') : '設定情報なし';
+            const settingsText = settings.length > 0 ? settings.join(', ') : '設定情報なし';
+            settingsInfo.textContent = window.WhereShotUtils.SecurityUtils.escapeHtml(settingsText);
         }
     }
 
@@ -363,6 +377,16 @@ class WhereShotApp {
         const resultsDiv = document.getElementById('analysis-results');
         if (resultsDiv) {
             resultsDiv.style.display = 'block';
+            
+            // 地図のサイズを再計算
+            setTimeout(() => {
+                if (window.WhereShotMapController && window.WhereShotMapController.map) {
+                    window.WhereShotMapController.map.invalidateSize();
+                    console.log('[WhereShot] Map resized after showing results');
+                }
+            }, 100);
+            
+            // スムーズスクロール
             resultsDiv.scrollIntoView({ behavior: 'smooth' });
         }
     }

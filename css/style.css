@@ -479,11 +479,14 @@ body {
 }
 
 .map-container {
-    height: 450px;
+    height: 500px;
+    min-height: 400px;
     border-radius: 1.5rem;
     overflow: hidden;
     border: 1px solid var(--border);
     box-shadow: var(--shadow-glass);
+    position: relative;
+    width: 100%;
 }
 
 .map-info {
@@ -748,6 +751,11 @@ body {
         flex-direction: column;
     }
     
+    .map-container {
+        height: 400px;
+        min-height: 350px;
+    }
+    
     .external-links {
         grid-template-columns: 1fr;
     }
@@ -777,7 +785,8 @@ body {
     }
     
     .map-container {
-        height: 300px;
+        height: 350px;
+        min-height: 300px;
     }
 }
 

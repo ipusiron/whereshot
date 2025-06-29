@@ -226,14 +226,17 @@ class ExifParser {
      */
     extractCameraInfo(exifData) {
         return {
-            make: exifData.Make || null,
-            model: exifData.Model || null,
-            software: exifData.Software || null,
-            lens: exifData.LensModel || exifData.LensInfo || null,
-            serial: exifData.BodySerialNumber || null,
-            lensSerial: exifData.LensSerialNumber || null,
+            make: this.sanitizeString(exifData.Make) || null,
+            model: this.sanitizeString(exifData.Model) || null,
+            software: this.sanitizeString(exifData.Software) || null,
+            lens: this.sanitizeString(exifData.LensModel || exifData.LensInfo) || null,
+            serial: this.sanitizeString(exifData.BodySerialNumber) || null,
+            lensSerial: this.sanitizeString(exifData.LensSerialNumber) || null,
             formatted: {
-                camera: this.formatCameraName(exifData.Make, exifData.Model),
+                camera: this.formatCameraName(
+                    this.sanitizeString(exifData.Make), 
+                    this.sanitizeString(exifData.Model)
+                ),
                 fullInfo: this.formatFullCameraInfo(exifData)
             }
         };
@@ -350,6 +353,53 @@ class ExifParser {
     }
 
     /**
+     * 文字列をサニタイズして文字化けを防ぐ
+     * @param {any} str - サニタイズする文字列
+     * @returns {string|null} サニタイズされた文字列
+     */
+    sanitizeString(str) {
+        if (!str) return null;
+        
+        // 文字列型でない場合は変換を試みる
+        if (typeof str !== 'string') {
+            // 配列やオブジェクトの場合は最初の要素を取得
+            if (Array.isArray(str) && str.length > 0) {
+                str = str[0];
+            } else if (typeof str === 'object') {
+                // オブジェクトの場合は文字列化を試みる
+                try {
+                    str = String(str);
+                } catch (error) {
+                    return null;
+                }
+            } else {
+                str = String(str);
+            }
+        }
+        
+        // 制御文字や非印字文字を除去
+        str = str.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+        
+        // 連続する非ASCII文字（文字化けの可能性）をチェック
+        const nonAsciiPattern = /[^\x20-\x7E\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g;
+        const nonAsciiMatches = str.match(nonAsciiPattern);
+        
+        // 非ASCII文字が全体の50%以上の場合は文字化けと判定
+        if (nonAsciiMatches && nonAsciiMatches.length > str.length * 0.5) {
+            return null;
+        }
+        
+        // 非ASCII文字を除去（ただし日本語は保持）
+        str = str.replace(/[^\x20-\x7E\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\s]/g, '');
+        
+        // 空白文字のトリム
+        str = str.trim();
+        
+        // 空文字列の場合はnullを返す
+        return str.length > 0 ? str : null;
+    }
+
+    /**
      * Exif日時文字列をDateオブジェクトに変換
      * @param {string} dateTimeString - Exif日時文字列
      * @returns {Date|null} Dateオブジェクト
@@ -412,16 +462,20 @@ class ExifParser {
      * @returns {string} フォーマットされたカメラ名
      */
     formatCameraName(make, model) {
-        if (!make && !model) return '不明';
-        if (!make) return model;
-        if (!model) return make;
+        // サニタイズされた値を使用
+        const safeMake = this.sanitizeString(make);
+        const safeModel = this.sanitizeString(model);
+        
+        if (!safeMake && !safeModel) return '不明';
+        if (!safeMake) return safeModel;
+        if (!safeModel) return safeMake;
         
         // メーカー名がモデル名に含まれている場合は重複を避ける
-        if (model.toLowerCase().includes(make.toLowerCase())) {
-            return model;
+        if (safeModel.toLowerCase().includes(safeMake.toLowerCase())) {
+            return safeModel;
         }
         
-        return `${make} ${model}`;
+        return `${safeMake} ${safeModel}`;
     }
 
     /**
@@ -432,16 +486,21 @@ class ExifParser {
     formatFullCameraInfo(exifData) {
         const parts = [];
         
-        if (exifData.Make && exifData.Model) {
-            parts.push(this.formatCameraName(exifData.Make, exifData.Model));
+        const safeMake = this.sanitizeString(exifData.Make);
+        const safeModel = this.sanitizeString(exifData.Model);
+        const safeLens = this.sanitizeString(exifData.LensModel);
+        const safeSoftware = this.sanitizeString(exifData.Software);
+        
+        if (safeMake && safeModel) {
+            parts.push(this.formatCameraName(safeMake, safeModel));
         }
         
-        if (exifData.LensModel) {
-            parts.push(`レンズ: ${exifData.LensModel}`);
+        if (safeLens) {
+            parts.push(`レンズ: ${safeLens}`);
         }
         
-        if (exifData.Software) {
-            parts.push(`ソフトウェア: ${exifData.Software}`);
+        if (safeSoftware) {
+            parts.push(`ソフトウェア: ${safeSoftware}`);
         }
         
         return parts.length > 0 ? parts.join('\n') : '情報なし';

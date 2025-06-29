@@ -34,6 +34,12 @@ class MapController {
 
             const mapOptions = { ...defaultOptions, ...options };
 
+            // 地図コンテナが表示されるまで待機
+            const container = document.getElementById(containerId);
+            if (!container) {
+                throw new Error(`Map container ${containerId} not found`);
+            }
+
             // 地図を作成
             this.map = L.map(containerId, {
                 center: mapOptions.center,
@@ -41,7 +47,8 @@ class MapController {
                 maxZoom: mapOptions.maxZoom,
                 minZoom: mapOptions.minZoom,
                 zoomControl: true,
-                attributionControl: true
+                attributionControl: true,
+                preferCanvas: false
             });
 
             // ベースレイヤーを設定
@@ -52,6 +59,24 @@ class MapController {
 
             // コントロールを追加
             this.addCustomControls();
+
+            // 地図のサイズを強制的に再計算
+            setTimeout(() => {
+                if (this.map) {
+                    this.map.invalidateSize();
+                    console.log('[WhereShot] Map size invalidated');
+                }
+            }, 100);
+
+            // 地図が読み込まれた後の追加チェック
+            this.map.whenReady(() => {
+                setTimeout(() => {
+                    if (this.map) {
+                        this.map.invalidateSize();
+                        console.log('[WhereShot] Map ready and size invalidated');
+                    }
+                }, 200);
+            });
 
             console.log('[WhereShot] Map initialized successfully');
 
@@ -105,6 +130,15 @@ class MapController {
         // ズーム変更イベント
         this.map.on('zoomend', (e) => {
             this.onMapZoom(e);
+        });
+
+        // ウィンドウリサイズイベント
+        window.addEventListener('resize', () => {
+            if (this.map) {
+                setTimeout(() => {
+                    this.map.invalidateSize();
+                }, 100);
+            }
         });
     }
 
