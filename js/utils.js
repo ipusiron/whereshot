@@ -208,44 +208,115 @@ const URLUtils = {
         const month = date.getMonth() + 1;
         const day = date.getDate();
 
-        // 地域の判定（簡易版：日本国内の主要観測所）
-        let precNo = 44; // デフォルト：東京
+        // 地域の判定（詳細版：日本国内の主要観測所）
+        let precNo = 44; // デフォルト：東京都
         let blockNo = 47662; // デフォルト：東京
+        let locationName = '東京';
 
-        // 緯度経度から観測所を推定（簡易版）
+        // 緯度経度から最適な観測所を推定
         if (lat && lng) {
             // 北海道
-            if (lat >= 41.5) {
-                precNo = 14; blockNo = 47412; // 札幌
+            if (lat >= 43.0) {
+                precNo = 14; blockNo = 47412; locationName = '札幌'; // 札幌
+            } else if (lat >= 41.5) {
+                precNo = 14; blockNo = 47418; locationName = '函館'; // 函館
             }
-            // 東北
-            else if (lat >= 37.5 && lng <= 141.5) {
-                precNo = 34; blockNo = 47590; // 仙台
+            // 東北地方
+            else if (lat >= 39.5 && lng <= 141.5) {
+                precNo = 31; blockNo = 47582; locationName = '盛岡'; // 盛岡
+            } else if (lat >= 38.0 && lng <= 141.5) {
+                precNo = 34; blockNo = 47590; locationName = '仙台'; // 仙台
+            } else if (lat >= 37.5 && lng <= 140.5) {
+                precNo = 36; blockNo = 47570; locationName = '福島'; // 福島
             }
-            // 関東
-            else if (lat >= 35.0 && lat < 37.5 && lng >= 138.5 && lng <= 140.5) {
-                precNo = 44; blockNo = 47662; // 東京
+            // 関東地方
+            else if (lat >= 36.5 && lng >= 139.0 && lng <= 140.5) {
+                precNo = 40; blockNo = 47648; locationName = '宇都宮'; // 宇都宮
+            } else if (lat >= 36.0 && lng >= 139.0 && lng <= 140.0) {
+                precNo = 43; blockNo = 47626; locationName = '前橋'; // 前橋  
+            } else if (lat >= 35.5 && lng >= 139.5 && lng <= 140.5) {
+                precNo = 44; blockNo = 47662; locationName = '東京'; // 東京
+            } else if (lat >= 35.0 && lng >= 139.0 && lng <= 140.0) {
+                precNo = 46; blockNo = 47670; locationName = '横浜'; // 横浜
             }
-            // 中部
-            else if (lat >= 34.5 && lat < 37.0 && lng >= 136.0 && lng < 139.0) {
-                precNo = 51; blockNo = 47636; // 名古屋
+            // 中部地方
+            else if (lat >= 36.5 && lng >= 137.5 && lng < 139.0) {
+                precNo = 48; blockNo = 47610; locationName = '新潟'; // 新潟
+            } else if (lat >= 36.0 && lng >= 137.0 && lng < 139.0) {
+                precNo = 20; blockNo = 47617; locationName = '長野'; // 長野
+            } else if (lat >= 35.5 && lng >= 136.5 && lng < 138.5) {
+                precNo = 50; blockNo = 47656; locationName = '甲府'; // 甲府
+            } else if (lat >= 35.0 && lng >= 136.0 && lng < 137.5) {
+                precNo = 51; blockNo = 47636; locationName = '名古屋'; // 名古屋
+            } else if (lat >= 35.5 && lng >= 136.0 && lng < 137.0) {
+                precNo = 52; blockNo = 47632; locationName = '岐阜'; // 岐阜
             }
-            // 関西
-            else if (lat >= 34.0 && lat < 36.0 && lng >= 134.0 && lng < 136.5) {
-                precNo = 62; blockNo = 47772; // 大阪
+            // 関西地方
+            else if (lat >= 35.0 && lng >= 135.5 && lng < 136.5) {
+                precNo = 61; blockNo = 47759; locationName = '京都'; // 京都
+            } else if (lat >= 34.5 && lng >= 135.0 && lng < 136.0) {
+                precNo = 62; blockNo = 47772; locationName = '大阪'; // 大阪
+            } else if (lat >= 34.5 && lng >= 134.5 && lng < 135.5) {
+                precNo = 63; blockNo = 47770; locationName = '神戸'; // 神戸
+            } else if (lat >= 34.0 && lng >= 135.5 && lng < 136.5) {
+                precNo = 64; blockNo = 47780; locationName = '奈良'; // 奈良
             }
-            // 中国
-            else if (lat >= 33.5 && lat < 35.5 && lng >= 131.5 && lng < 134.5) {
-                precNo = 67; blockNo = 47765; // 広島
+            // 中国地方
+            else if (lat >= 35.0 && lng >= 133.0 && lng < 134.5) {
+                precNo = 66; blockNo = 47741; locationName = '岡山'; // 岡山
+            } else if (lat >= 34.0 && lng >= 132.0 && lng < 134.0) {
+                precNo = 67; blockNo = 47765; locationName = '広島'; // 広島
+            } else if (lat >= 34.0 && lng >= 131.0 && lng < 132.5) {
+                precNo = 83; blockNo = 47784; locationName = '下関'; // 下関
             }
-            // 九州
-            else if (lat < 34.0) {
-                precNo = 82; blockNo = 47807; // 福岡
+            // 四国地方
+            else if (lat >= 33.5 && lng >= 133.5 && lng < 135.0) {
+                precNo = 71; blockNo = 47815; locationName = '徳島'; // 徳島
+            } else if (lat >= 34.0 && lng >= 133.0 && lng < 134.5) {
+                precNo = 72; blockNo = 47821; locationName = '高松'; // 高松
+            } else if (lat >= 33.5 && lng >= 132.5 && lng < 133.5) {
+                precNo = 73; blockNo = 47827; locationName = '松山'; // 松山
+            } else if (lat >= 32.5 && lng >= 133.0 && lng < 134.0) {
+                precNo = 74; blockNo = 47837; locationName = '高知'; // 高知
+            }
+            // 九州地方
+            else if (lat >= 33.5 && lng >= 130.0 && lng < 131.5) {
+                precNo = 82; blockNo = 47807; locationName = '福岡'; // 福岡
+            } else if (lat >= 32.5 && lng >= 129.5 && lng < 131.0) {
+                precNo = 84; blockNo = 47817; locationName = '佐賀'; // 佐賀
+            } else if (lat >= 32.5 && lng >= 129.0 && lng < 130.5) {
+                precNo = 85; blockNo = 47819; locationName = '長崎'; // 長崎
+            } else if (lat >= 32.5 && lng >= 130.5 && lng < 132.0) {
+                precNo = 86; blockNo = 47824; locationName = '熊本'; // 熊本
+            } else if (lat >= 33.0 && lng >= 131.0 && lng < 132.5) {
+                precNo = 87; blockNo = 47815; locationName = '大分'; // 大分
+            } else if (lat >= 31.5 && lng >= 131.0 && lng < 132.0) {
+                precNo = 88; blockNo = 47830; locationName = '宮崎'; // 宮崎
+            } else if (lat >= 31.0 && lng >= 130.0 && lng < 131.5) {
+                precNo = 89; blockNo = 47827; locationName = '鹿児島'; // 鹿児島
+            }
+            // 沖縄地方
+            else if (lat < 27.0) {
+                precNo = 91; blockNo = 47936; locationName = '那覇'; // 那覇
             }
         }
 
-        // 気象庁の過去の気象データURL
-        return `https://www.data.jma.go.jp/obd/stats/etrn/view/daily_s1.php?prec_no=${precNo}&block_no=${blockNo}&year=${year}&month=${month}&day=${day}&view=`;
+        // 気象庁の過去の気象データURL（撮影日に直接アクセス）
+        const baseURL = 'https://www.data.jma.go.jp/obd/stats/etrn/view/daily_s1.php';
+        const params = new URLSearchParams({
+            prec_no: precNo.toString(),
+            block_no: blockNo.toString(),
+            year: year.toString(),
+            month: month.toString(),
+            day: day.toString(),
+            view: ''
+        });
+
+        const finalURL = `${baseURL}?${params.toString()}`;
+        
+        console.log(`[WeatherURL] Generated for ${locationName} (${year}/${month}/${day}):`, finalURL);
+        
+        return finalURL;
     },
 
     /**
