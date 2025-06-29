@@ -171,6 +171,19 @@ console.log(sunData.position.elevation, sunData.position.azimuth);
 
 ### MapController API
 
+
+
+### URLUtils API
+
+#### `generateWeatherURL(lat: number, lng: number, date: Date): string`
+
+指定された緯度・経度と日付に最も近い観測所を自動選択し、  
+**気象庁「過去の天気」ページのURL**を生成します。
+
+```js
+const url = URLUtils.generateWeatherURL(35.6895, 139.6917, new Date("2025-06-01"));
+// → 東京の2025年6月1日の天気ページURL
+```
 #### `setLocation(latitude: number, longitude: number, options?: LocationOptions): void`
 
 地図上に位置マーカーを設定します。

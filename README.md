@@ -59,8 +59,10 @@ Exifが存在しない画像でも手動補完モードで推定可能です。
 
 - **[NASA Worldview](https://worldview.earthdata.nasa.gov/)**: 衛星画像・気象データ
 - **[地理院地図](https://maps.gsi.go.jp/)**: 空中写真・地形図
-- **[気象庁 過去の天気](https://www.data.jma.go.jp/obd/stats/etrn/)**: 気象記録
+- **[気象庁 過去の天気](https://www.data.jma.go.jp/obd/stats/etrn/)**: 気象庁 過去の天気: 緯度・経度と撮影日時に基づき、最寄りの観測所の当日データを自動リンク生成。天候・気温・風向などを確認できます。
 - **[ひまわり気象衛星](https://www.jma.go.jp/bosai/forecast/)**: 雲画像データ
+
+📍 WhereShotは`stations.json`ファイルを用いて全国の観測所情報を保持し、位置に応じた正確な気象データ参照を実現しています。
 
 ---
 
@@ -94,6 +96,8 @@ whereshot/
 │   ├── map-controller.js   # 地図制御モジュール
 │   └── main.js             # メイン制御スクリプト
 ├── assets/                 # 画像・スクリーンショット等
+├── data/
+│   └── station.json        # 全国の観測所情報
 ├── docs/                   # ドキュメント
 │   ├── user-guide.md       # 使用方法ガイド
 │   ├── api-reference.md    # API仕様書
