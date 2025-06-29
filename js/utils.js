@@ -372,13 +372,16 @@ const URLUtils = {
         return `https://www.suncalc.org/#/${lat},${lng},15/${dateStr}/12:00/1/3`;
     },
 
-    /**
-     * 類似画像検索URL生成（Google Images）
-     * @returns {string} Google Images URL
-     */
-    generateReverseImageURL: () => {
-        return 'https://images.google.com/';
-    }
+
+/**
+ * 類似画像検索URL生成（更新版）
+ * @param {File} imageFile - 検索対象の画像ファイル（オプション）
+ * @returns {string} 検索URL
+ */
+generateReverseImageURL: (imageFile = null) => {
+    // 基本的にはGoogle Imagesの検索ページ
+    return 'https://images.google.com/';
+},
 };
 
 // ========== ファイルユーティリティ ==========
