@@ -957,37 +957,37 @@ body {
     font-family: var(--font-sans) !important;
 }
 
-/* レイヤーコントロールのダークモード対応 */
+/* レイヤーコントロールのライトモード対応（視認性優先） */
 .leaflet-control-layers {
-    background: rgba(15, 15, 35, 0.95) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
     backdrop-filter: var(--blur) !important;
     -webkit-backdrop-filter: var(--blur) !important;
-    border: 1px solid var(--border-light) !important;
+    border: 2px solid rgba(0, 0, 0, 0.2) !important;
     border-radius: 1rem !important;
-    box-shadow: var(--shadow-glass) !important;
-    color: var(--text-primary) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    color: #222 !important;
     padding: 0.75rem !important;
 }
 
 .leaflet-control-layers-toggle {
-    background: rgba(15, 15, 35, 0.95) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
     backdrop-filter: var(--blur) !important;
     border-radius: 0.75rem !important;
-    border: 1px solid var(--border-light) !important;
+    border: 2px solid rgba(0, 0, 0, 0.2) !important;
 }
 
 .leaflet-control-layers-expanded {
-    background: rgba(15, 15, 35, 0.95) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
     backdrop-filter: var(--blur) !important;
     -webkit-backdrop-filter: var(--blur) !important;
-    border: 1px solid var(--border-light) !important;
-    color: var(--text-primary) !important;
+    border: 2px solid rgba(0, 0, 0, 0.2) !important;
+    color: #222 !important;
 }
 
 .leaflet-control-layers-base label,
 .leaflet-control-layers-overlays label {
-    color: var(--text-primary) !important;
-    font-weight: 500 !important;
+    color: #222 !important;
+    font-weight: 600 !important;
     padding: 0.5rem 0.25rem !important;
     display: flex !important;
     align-items: center !important;
@@ -1000,20 +1000,20 @@ body {
 /* ラベル内のspan要素にも確実に色を適用 */
 .leaflet-control-layers-base label span,
 .leaflet-control-layers-overlays label span {
-    color: var(--text-primary) !important;
-    font-weight: 500 !important;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.5) !important;
+    color: #222 !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
 }
 
 .leaflet-control-layers-base label:hover,
 .leaflet-control-layers-overlays label:hover {
-    background: var(--bg-card-hover) !important;
-    color: var(--primary) !important;
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: var(--primary-dark) !important;
 }
 
 .leaflet-control-layers-base label:hover span,
 .leaflet-control-layers-overlays label:hover span {
-    color: var(--primary) !important;
+    color: var(--primary-dark) !important;
 }
 
 .leaflet-control-layers-selector {
@@ -1024,7 +1024,7 @@ body {
 }
 
 .leaflet-control-layers-separator {
-    border-top: 1px solid var(--border) !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.15) !important;
     margin: 0.5rem 0 !important;
 }
 
