@@ -284,7 +284,7 @@ const URLUtils = {
   generateStreetViewURL: (lat, lng) => {
     if (!lat || !lng) return '#';
 
-    return `https://www.google.com/maps/@${lat},${lng},3a,75y,90h,90t/data=!3m7!1e1!3m5!1s-!2e0!6s%2F%2Fgeo0.ggpht.com!7i13312!8i6656`;
+    return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
   },
 
   /**
