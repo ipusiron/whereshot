@@ -277,17 +277,25 @@ body {
 }
 
 .btn-link {
-    background: transparent;
-    color: var(--primary);
-    border: 1px solid var(--primary);
-    padding: 0.5rem 1rem;
-    font-size: 0.8rem;
+    background: var(--bg-glass);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    color: var(--text-primary);
+    border: 2px solid var(--primary);
+    padding: 0.6rem 1.2rem;
+    font-size: 0.875rem;
+    font-weight: 600;
     border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+    transition: var(--transition);
 }
 
 .btn-link:hover {
-    background: var(--primary);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
     color: white;
+    border-color: var(--primary-light);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    transform: translateY(-2px);
 }
 
 /* ========== ファイルアップロード（グラスモルフィズム） ========== */
@@ -940,6 +948,128 @@ body {
 
 .leaflet-control-container {
     font-family: var(--font-sans) !important;
+}
+
+/* レイヤーコントロールのダークモード対応 */
+.leaflet-control-layers {
+    background: var(--bg-glass) !important;
+    backdrop-filter: var(--blur) !important;
+    -webkit-backdrop-filter: var(--blur) !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: 1rem !important;
+    box-shadow: var(--shadow-glass) !important;
+    color: var(--text-primary) !important;
+    padding: 0.75rem !important;
+}
+
+.leaflet-control-layers-toggle {
+    background: var(--bg-glass) !important;
+    backdrop-filter: var(--blur) !important;
+    border-radius: 0.75rem !important;
+    border: 1px solid var(--border-light) !important;
+}
+
+.leaflet-control-layers-expanded {
+    background: var(--bg-glass) !important;
+    backdrop-filter: var(--blur) !important;
+    -webkit-backdrop-filter: var(--blur) !important;
+    border: 1px solid var(--border-light) !important;
+    color: var(--text-primary) !important;
+}
+
+.leaflet-control-layers-base label,
+.leaflet-control-layers-overlays label {
+    color: var(--text-primary) !important;
+    font-weight: 500 !important;
+    padding: 0.5rem 0.25rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    cursor: pointer !important;
+    transition: var(--transition-fast) !important;
+    border-radius: 0.5rem !important;
+}
+
+.leaflet-control-layers-base label:hover,
+.leaflet-control-layers-overlays label:hover {
+    background: var(--bg-card-hover) !important;
+    color: var(--primary) !important;
+}
+
+.leaflet-control-layers-selector {
+    margin-right: 0.5rem !important;
+    cursor: pointer !important;
+}
+
+.leaflet-control-layers-separator {
+    border-top: 1px solid var(--border) !important;
+    margin: 0.5rem 0 !important;
+}
+
+/* Leafletズームコントロール */
+.leaflet-control-zoom {
+    border: 1px solid var(--border-light) !important;
+    border-radius: 0.75rem !important;
+    overflow: hidden !important;
+    box-shadow: var(--shadow-glass) !important;
+}
+
+.leaflet-control-zoom a {
+    background: var(--bg-glass) !important;
+    backdrop-filter: var(--blur) !important;
+    -webkit-backdrop-filter: var(--blur) !important;
+    color: var(--text-primary) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    transition: var(--transition-fast) !important;
+}
+
+.leaflet-control-zoom a:last-child {
+    border-bottom: none !important;
+}
+
+.leaflet-control-zoom a:hover {
+    background: var(--bg-card-hover) !important;
+    color: var(--primary) !important;
+}
+
+/* Leafletスケールコントロール */
+.leaflet-control-scale {
+    background: var(--bg-glass) !important;
+    backdrop-filter: var(--blur) !important;
+    -webkit-backdrop-filter: var(--blur) !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: 0.5rem !important;
+    color: var(--text-primary) !important;
+    padding: 0.25rem 0.5rem !important;
+    font-family: var(--font-mono) !important;
+}
+
+.leaflet-control-scale-line {
+    border: 2px solid var(--text-primary) !important;
+    border-top: none !important;
+    color: var(--text-primary) !important;
+    background: transparent !important;
+}
+
+/* Leafletアトリビューション */
+.leaflet-control-attribution {
+    background: var(--bg-glass) !important;
+    backdrop-filter: var(--blur) !important;
+    -webkit-backdrop-filter: var(--blur) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 0.5rem 0 0 0 !important;
+    color: var(--text-muted) !important;
+    font-size: 0.7rem !important;
+    padding: 0.25rem 0.5rem !important;
+}
+
+.leaflet-control-attribution a {
+    color: var(--primary) !important;
+}
+
+.leaflet-control-attribution a:hover {
+    color: var(--primary-light) !important;
 }
 
 .leaflet-popup-content-wrapper {
