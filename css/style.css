@@ -838,6 +838,13 @@ body {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+/* セレクトボックスのオプション要素 */
+.form-select option {
+    background: #1a1a3e;
+    color: var(--text-primary);
+    padding: 0.5rem;
+}
+
 /* 地図ラッパー */
 .map-wrapper {
     position: relative;
