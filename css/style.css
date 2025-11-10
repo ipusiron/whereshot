@@ -959,7 +959,7 @@ body {
 
 /* レイヤーコントロールのダークモード対応 */
 .leaflet-control-layers {
-    background: var(--bg-glass) !important;
+    background: rgba(15, 15, 35, 0.95) !important;
     backdrop-filter: var(--blur) !important;
     -webkit-backdrop-filter: var(--blur) !important;
     border: 1px solid var(--border-light) !important;
@@ -970,14 +970,14 @@ body {
 }
 
 .leaflet-control-layers-toggle {
-    background: var(--bg-glass) !important;
+    background: rgba(15, 15, 35, 0.95) !important;
     backdrop-filter: var(--blur) !important;
     border-radius: 0.75rem !important;
     border: 1px solid var(--border-light) !important;
 }
 
 .leaflet-control-layers-expanded {
-    background: var(--bg-glass) !important;
+    background: rgba(15, 15, 35, 0.95) !important;
     backdrop-filter: var(--blur) !important;
     -webkit-backdrop-filter: var(--blur) !important;
     border: 1px solid var(--border-light) !important;
@@ -1002,6 +1002,7 @@ body {
 .leaflet-control-layers-overlays label span {
     color: var(--text-primary) !important;
     font-weight: 500 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.5) !important;
 }
 
 .leaflet-control-layers-base label:hover,
