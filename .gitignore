@@ -138,3 +138,7 @@ dev-notes/
 # プライベートキー
 *.private
 private/
+
+# =========== 生成AI開発 ===========
+# Claude
+.claude/
