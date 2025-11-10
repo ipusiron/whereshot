@@ -637,6 +637,11 @@ class WhereShotApp {
 
       this.currentFile = file;
 
+      // 地図をリセット（前の画像のマーカー等をクリア）
+      if (this.mapInitialized && window.WhereShotMapController) {
+        window.WhereShotMapController.resetMap();
+      }
+
       // ファイル情報を表示
       this.displayFileInfo(file);
 
@@ -711,7 +716,9 @@ class WhereShotApp {
                     }
                 `;
       } else {
-        datetimeInfo.textContent = '日時情報なし';
+        datetimeInfo.innerHTML = `
+                    <p style="color: var(--text-muted);">日時情報なし</p>
+                `;
       }
     }
 
@@ -729,11 +736,15 @@ class WhereShotApp {
           : '';
 
         gpsInfo.innerHTML = `
+                    <div class="gps-status-badge gps-available">✓ GPS有り</div>
                     <strong>座標:</strong><br>${coordinates}<br>
                     ${altitude ? `<strong>高度:</strong> ${altitude}` : ''}
                 `;
       } else {
-        gpsInfo.textContent = 'GPS情報なし';
+        gpsInfo.innerHTML = `
+                    <div class="gps-status-badge gps-unavailable">✕ GPS無し</div>
+                    <p style="margin-top: 0.5rem; color: var(--text-muted);">位置情報が記録されていません</p>
+                `;
       }
     }
 
