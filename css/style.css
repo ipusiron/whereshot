@@ -997,15 +997,29 @@ body {
     border-radius: 0.5rem !important;
 }
 
+/* ラベル内のspan要素にも確実に色を適用 */
+.leaflet-control-layers-base label span,
+.leaflet-control-layers-overlays label span {
+    color: var(--text-primary) !important;
+    font-weight: 500 !important;
+}
+
 .leaflet-control-layers-base label:hover,
 .leaflet-control-layers-overlays label:hover {
     background: var(--bg-card-hover) !important;
     color: var(--primary) !important;
 }
 
+.leaflet-control-layers-base label:hover span,
+.leaflet-control-layers-overlays label:hover span {
+    color: var(--primary) !important;
+}
+
 .leaflet-control-layers-selector {
     margin-right: 0.5rem !important;
     cursor: pointer !important;
+    /* ラジオボタン自体の視認性も改善 */
+    accent-color: var(--primary) !important;
 }
 
 .leaflet-control-layers-separator {
