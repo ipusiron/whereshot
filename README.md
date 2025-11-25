@@ -1,3 +1,44 @@
+<!--
+---
+id: day013
+slug: whereshot
+
+title: "WhereShot"
+
+subtitle_ja: "撮影時刻・場所解析ツール"
+subtitle_en: "Capture Time & Place Analyzer"
+
+description_ja: "画像・動画から「いつ・どこで撮られたか？」を推定・検証するためのOSINT支援ツール。Exifメタデータの抽出、太陽位置計算、地図上での方角可視化、気象データや衛星画像との連携など、撮影情報を多角的に分析できます。"
+description_en: "An OSINT tool for estimating and verifying when and where photos/videos were taken. Features include EXIF metadata extraction, solar position calculation, directional visualization on maps, and integration with weather data and satellite imagery."
+
+category_ja:
+  - OSINT
+  - フォレンジック
+category_en:
+  - OSINT
+  - Forensics
+
+difficulty: 3
+
+tags:
+  - EXIF
+  - OSINT
+  - geolocation
+  - metadata
+  - privacy
+  - forensics
+  - sun-position
+  - leaflet
+  - Metadata Analysis
+  - Image Forensics
+
+repo_url: "https://github.com/ipusiron/whereshot"
+demo_url: "https://ipusiron.github.io/whereshot/"
+
+hub: true
+---
+-->
+
 # WhereShot（ウェアショット） 撮影時刻・場所解析ツール（Capture Time & Place Analyzer）
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
