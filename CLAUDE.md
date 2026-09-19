@@ -4,44 +4,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-WhereShot is a privacy-focused OSINT (Open Source Intelligence) tool for analyzing photo/video metadata to determine when and where images were captured. All processing happens locally in the browser - no external data transmission.
+WhereShot is a privacy-focused OSINT (Open Source Intelligence) tool for analyzing image metadata to determine when and where images were captured. Image analysis happens locally. Leaflet is loaded from cdnjs; selected map tiles are requested only after loading an image.
 
 **Core Technologies:**
 - Pure vanilla JavaScript (no build tools required)
 - Leaflet.js for interactive maps
-- exif-js for metadata extraction
-- SunCalc for solar position calculations
+- Self-hosted ExifReader 4.12.0 for metadata extraction
+- Self-hosted SunCalc 1.9.0 for solar position calculations
 
 **Privacy Design:**
 - 100% client-side processing
 - No server-side components
 - No external API calls for image analysis
-- Suitable for sensitive investigations
+- Tile providers receive the viewed area; assess privacy before sensitive investigations.
 
 ## Development Setup
 
 ### Running Locally
 
-The application requires an HTTP server to function properly due to JSON file loading:
-
 ```bash
-# Recommended method
 python -m http.server 8000
-
-# Alternative
-npx serve .
+npm test
 ```
 
-Then access at `http://localhost:8000`
+Open http://localhost:8000. Node 22 or later is required for tests; there are no npm dependencies.
+Opening index.html via file:// also works, including all 54 stations.
+HTTP is recommended for map use because file:// cannot send a valid HTTP Referer.
 
-**Important:** Opening `index.html` directly via `file://` protocol will trigger fallback mode with limited weather station data (20 locations instead of full dataset).
+### File Structure
 
-### File Protocol Limitations
-
-When accessed via `file://` protocol:
-- `data/stations.json` cannot be loaded (CORS restrictions)
-- Application falls back to 20 hardcoded weather stations in `main.js:130-287`
-- User receives a warning banner suggesting HTTP server usage
+- js/whereshot-logic.js: pure calculations, no DOM or environment-dependent clock
+- js/main.js: DOM, file selection, UTC offset selection, SHA-256, report and preview
+- js/exif-parser.js: File.arrayBuffer and ExifReader adapter
+- js/sun-calculator.js: SunCalc adapter
+- js/map-controller.js: Leaflet, position/direction modes and layers
+- js/utils.js: FileUtils, UIUtils and cleanup helpers
+- data/stations.json and data/stations.js: the same 54 stations
+- vendor/: unmodified ExifReader and SunCalc, licenses and hash documentation
+- test/: dependency-free node:test suite, including README and timezone checks
+- .github/workflows/test.yml: push and pull_request checks
+- .nojekyll: publish vendor files in the legacy Pages root deployment
 
 ## Architecture
 
@@ -54,49 +56,48 @@ window.WhereShotApp          // Main application controller
 window.WhereShotExifParser   // Metadata extraction engine
 window.WhereShotMapController // Map management
 window.WhereShotSunCalculator // Solar position calculations
-window.WhereShotDateTimeEstimator // DateTime from filename
+globalThis.WhereShotLogic    // Pure calculations, also CommonJS-compatible
 window.WhereShotUtils        // Shared utilities
 window.WhereShotStations     // Weather station data
 ```
 
 ### Module Loading Order (Critical)
 
-In `index.html:265-270`, scripts must load in this exact order:
-1. `utils.js` - Foundation utilities (must load first)
-2. `exif-parser.js` - Depends on WhereShotUtils
-3. `datetime-estimator.js` - Depends on WhereShotUtils
-4. `sun-calculator.js` - Depends on WhereShotUtils
-5. `map-controller.js` - Depends on WhereShotUtils
-6. `main.js` - Orchestrates all modules (must load last)
+All scripts are classic scripts with defer, in this order:
+
+1. Leaflet 1.9.4 (cdnjs, existing SRI)
+2. vendor/exifreader/exif-reader.min.js
+3. vendor/suncalc/suncalc.js
+4. data/stations.js
+5. js/whereshot-logic.js
+6. js/utils.js
+7. js/exif-parser.js
+8. js/sun-calculator.js
+9. js/map-controller.js
+10. js/main.js
 
 ### Initialization Flow
 
-The initialization sequence in `main.js` is carefully ordered to prevent race conditions:
+1. DOM ready, offset choices and UI event listeners
+2. External links initialized as disabled
+3. A file is selected: clear old results and markers, then parse metadata
+4. Show analysis-results, then initialize the map once
+5. Set position, wall-clock time and UTC offset; calculate sun, links and report
 
-1. **DOM Ready** → `WhereShotApp.initialize()`
-2. **UI Event Listeners** → Setup before map initialization
-3. **Station Data Loading** → Load `data/stations.json` or fallback
-4. **Security Setup** → Configure CSP and crypto checks
-5. **External Links Init** → Default states and security attributes
-6. **Map Initialization (Deferred)** → 500ms delay via `initializeMapWhenReady()`
-
-**Map Initialization Strategy:**
-- Delayed by 500ms to ensure DOM stability (`main.js:64-66`)
-- Waits for container visibility with timeout (`map-controller.js:147-186`)
-- Multiple size recalculations at 200ms, 500ms, 1000ms intervals
-- Custom events: `whereshot:mapInitialized` and `whereshot:mapInitializationFailed`
+No map or tile request is created on startup. No polling for a hidden container is needed.
+Use safeInvalidateSize after showing the results.
 
 ### Inter-Module Communication
 
 Uses custom DOM events prefixed with `whereshot:`:
 
 ```javascript
-// Dispatching (map-controller.js:722-727)
+// Dispatching (map-controller.js)
 document.dispatchEvent(new CustomEvent('whereshot:locationChanged', {
     detail: { latitude, longitude }
 }));
 
-// Listening (main.js:472-478)
+// Listening (main.js)
 document.addEventListener('whereshot:locationChanged', (e) => {
     this.onLocationChanged(e.detail);
 });
@@ -112,57 +113,41 @@ document.addEventListener('whereshot:locationChanged', (e) => {
 
 ### 1. EXIF Metadata Extraction
 
-**File:** `js/exif-parser.js`
-
-Handles metadata with security considerations:
-- **Sanitization** (`sanitizeString:359-400`): Removes control characters, detects mojibake (garbled text)
-- **Security Analysis** (`performSecurityAnalysis:307-353`): Identifies privacy risks (GPS, serial numbers)
-- **Data Clearing** (`clearData:535-541`): Secure cleanup of sensitive data
+File: js/exif-parser.js. Read File.arrayBuffer, call ExifReader.load with expanded:true,
+then WhereShotLogic.normalizeTags. Catch parser exceptions and return all-null metadata.
+Always finish loading in finally. Non-ASCII camera names are preserved.
+GPSHPositioningError is in meters; GPSDOP is never used as a radius.
 
 ### 2. DateTime Estimation from Filenames
 
-**File:** `js/datetime-estimator.js`
-
-Extracts timestamps from filenames using 50+ patterns:
-- Camera formats: `IMG_20240101_123456.jpg`, `DSC_*.jpg`, `VID_*.mp4`
-- Screenshot formats: `Screenshot_2024-01-01-12-34-56.png`
-- Japanese formats: `2024年1月1日12時34分56秒.jpg`
-- Unix timestamps: `1609459200.jpg`
-
-**Reliability Scoring:**
-- High (0.9-0.95): Format matches camera conventions
-- Medium (0.7-0.85): Partial time information
-- Low (0.5-0.7): Date only, ambiguous formats
+File: js/whereshot-logic.js. FILENAME_PATTERNS contains 11 patterns.
+Skip overlapping accepted matches; reject invalid calendar values instead of normalizing overflow.
+Pixel and Unix names represent UTC. Other names represent wall time at the selected offset.
+Confidence is a consistency indicator, at most 0.95, not authenticity evidence.
+Exif/file modification times become notes, not conflicts.
 
 ### 3. Weather Station Lookup
 
-**File:** `data/stations.json` + `main.js:96-124`
-
-Generates links to Japan Meteorological Agency historical weather data:
-- Full dataset: 1,000+ observation stations nationwide
-- Fallback: 20 major cities when file protocol is used
-- Used in `utils.js:URLUtils.generateWeatherURL()` to find nearest station
+data/stations.json is authoritative; stations.js contains identical data for HTTP and file://.
+nearestStation selects only within 200km. Otherwise link to the JMA top page.
+jmaHourlyUrl uses the UTC instant converted to Japan time, and hourly_s1.php.
 
 ### 4. Solar Position Calculations
 
-**File:** `js/sun-calculator.js`
-
-Uses SunCalc library to:
-- Calculate sun elevation and azimuth at specific time/location
-- Determine golden hour, sunset, sunrise times
-- Estimate shadow length and direction
-- Verify photo authenticity by comparing shadows
+sunReport receives SunCalc as an argument and uses a UTC instant.
+sunPhaseKey uses altitude and azimuth, not sunrise/sunset times (polar regions can lack these).
+Azimuth is clockwise from true north. Shadows below the horizon are null.
+All direction labels use toCardinalJa.
 
 ### 5. Map Management
 
 **File:** `js/map-controller.js`
 
-**Initialization Challenges:**
-The map initialization has been heavily refined to handle timing issues:
-- **Container Wait** (`_waitForContainer:121-140`): 5-second timeout to find DOM element
-- **Visibility Wait** (`_waitForContainerVisible:147-186`): Checks dimensions every 100ms, max 2 seconds
-- **Ready Wait** (`_waitForMapReady:193-216`): Waits for Leaflet's `whenReady()` event
-- **Size Invalidation** (`safeInvalidateSize:239-272`): Safe wrapper that checks initialization state
+**Initialization:**
+Show analysis-results before initializeMap. Initialize once and use safeInvalidateSize on resize.
+Position mode and direction mode are mutually exclusive.
+directionLayer owns the line and both arrowheads; replacing, disabling or resetting removes it.
+Only map-layer-select switches base layers; exactly one tile layer remains active.
 
 **Three Base Layers:**
 - OpenStreetMap (default)
@@ -173,32 +158,42 @@ The map initialization has been heavily refined to handle timing issues:
 
 ### Security Practices
 
-1. **XSS Prevention:** All user input and EXIF data sanitized via `SecurityUtils.escapeHtml()`
-2. **CSP Header:** Meta tag in `index.html:11` restricts inline scripts
-3. **No eval():** No dynamic code execution
-4. **Secure Random:** Uses `window.crypto.getRandomValues()` when available
+- Render external strings with createElement and textContent.
+- Use native dialog, hidden/classList, and guarded clipboard access.
+- Revoke preview object URLs on hide, replacement and reset.
+- Do not save images, Exif, coordinates or reports to persistent browser storage.
+- Console warnings/errors must use fixed messages without private values.
 
-### Data Sanitization Example
+CSP in index.html:
 
-```javascript
-// exif-parser.js:359-400
-sanitizeString(str) {
-    // Remove control characters
-    str = str.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
-
-    // Detect mojibake (>50% non-ASCII)
-    const nonAsciiMatches = str.match(/[^\x20-\x7E\u3040-\u309F...]/g);
-    if (nonAsciiMatches && nonAsciiMatches.length > str.length * 0.5) {
-        return null;
-    }
-
-    return str.trim();
-}
+```text
+default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com;
+style-src 'self' https://cdnjs.cloudflare.com;
+img-src 'self' data: blob: https://tile.openstreetmap.org https://server.arcgisonline.com https://*.tile.opentopomap.org;
+connect-src 'none'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
 ```
+
+### Must Not Do
+
+- Do not use local-time Date getters, multi-argument Date, or locale formatting in whereshot-logic.js.
+- Do not use DOM, network, storage, randomness or current time inside pure logic.
+- Do not change referrer to no-referrer; keep strict-origin-when-cross-origin for OSM.
+- Do not restore the {s} subdomain in the OSM tile URL.
+- Do not use innerHTML or inline scripts/styles; do not relax CSP.
+- Do not edit, format or change versions of vendor files.
+- Do not update stations.json without updating stations.js identically.
+- Do not add external APIs, npm dependencies, modules or build tools.
+- Do not apply longitude-based offset hints automatically.
+
+### Pure Logic API
+
+The complete function list and result shapes are in docs/api_reference.md.
+Wall-clock values are {year, month, day, hour, minute, second}; UTC instants are milliseconds.
+Browser fallback offsets are calculated only in main.js for the relevant date (including DST).
 
 ### External Link Generation
 
-External service integrations (`js/utils.js:URLUtils`):
+External service URL builders (js/whereshot-logic.js):
 - **NASA Worldview:** Satellite imagery for specific date/location
 - **GSI Maps:** Japan's Geospatial Information Authority maps
 - **JMA Weather:** Historical weather data from nearest station
@@ -210,64 +205,27 @@ All links include `target="_blank" rel="noopener noreferrer"` for security.
 
 ### Adding a New File Format
 
-1. Update `FileUtils.ALLOWED_TYPES` in `utils.js`
-2. Add validation in `FileUtils.validateFile()`
-3. Update UI hint text in `index.html:47`
+Keep FileUtils.validateFile allowedTypes, index.html accept/hint and README MIME table identical.
+Confirm the existing parser actually supports the format.
 
 ### Adding a New Datetime Pattern
 
-Add to `dateTimePatterns` array in `datetime-estimator.js:8-200`:
-
-```javascript
-{
-    pattern: /your_regex_here/,
-    format: 'DESCRIPTION',
-    reliability: 0.9  // 0.0-1.0 confidence score
-}
-```
-
-Order matters - patterns are checked sequentially.
+Add to FILENAME_PATTERNS in whereshot-logic.js.
+Order matters: only non-overlapping valid matches are accepted.
+Add literal examples to test/logic.test.js and the README table checks.
 
 ### Extending External Links
 
-Add to `URLUtils` in `utils.js` and update UI in `index.html:191-212`.
+Use pure URL functions and the single getAnalysisTime result in main.js.
+Do not introduce a new network API.
 
 ## Debugging Tips
 
-### Map Initialization Issues
-
-Check console for these log patterns:
-```
-[WhereShot] Starting map initialization...
-[WhereShot] Container found: map
-[WhereShot] Container is visible after X attempts
-[WhereShot] Map initialization completed successfully
-```
-
-If map doesn't display:
-1. Verify container has non-zero dimensions
-2. Check if `display: none` is preventing visibility detection
-3. Use `app.mapInitialized` in console to check state
-4. Call `window.WhereShotMapController.safeInvalidateSize()` manually
-
-### EXIF Not Extracting
-
-Common causes:
-1. File processed/resized by social media (metadata stripped)
-2. PNG files often lack EXIF (format limitation)
-3. Camera settings disabled GPS tagging
-4. File opened via `file://` protocol in some browsers
-
-Use browser console: `window.WhereShotExifParser.getExtractedData()` to inspect raw data.
-
-### Station Data Not Loading
-
-Check console for:
-```
-[WhereShot] File protocol detected. Using fallback station data.
-```
-
-Solution: Run via HTTP server, not `file://` protocol.
+- Check analysis-results is visible before map initialization.
+- Inspect readFailed for unreadable metadata; the parser returns all-null fields.
+- Check selected UTC offset and its source before interpreting solar results.
+- Confirm WhereShotStations.length is 54 under both HTTP and file://.
+- Do not log coordinates, times, filenames or reports.
 
 ## Git Commit History Notes
 
@@ -279,31 +237,23 @@ Recent important fixes:
 
 ## Known Limitations
 
-1. **Video Files:** Basic metadata only (no frame-by-frame analysis)
-2. **RAW Formats:** Not supported (browser limitation)
-3. **Offline Mode:** Map tiles require internet connection
-4. **Mobile Safari:** Some datetime input limitations
-5. **IE11:** Not supported (uses modern ES6+ features)
+1. Videos are not supported.
+2. HEIC/HEIF preview depends on browser codecs; metadata parsing continues.
+3. Leaflet CDN and map tiles need network access.
+4. Metadata and filenames can be edited; consistency does not prove authenticity.
+5. Magnetic-north camera directions are displayed without correction.
 
 ## Testing Approach
 
-This is a client-side tool with no test suite. Manual testing workflow:
-
-1. **Test with GPS Image:** Use `assets/2016-07-24 10.33.57.jpg` (included sample)
-2. **Test without GPS:** Use any screenshot or processed image
-3. **Test Datetime Extraction:** Create files with various naming patterns
-4. **Test Map Layers:** Switch between OSM/Satellite/Terrain
-5. **Test Solar Calculations:** Pick known time/location, verify with SunCalc.org
+Run npm test with Node 22 or later. No network or npm dependencies are needed.
+The suite checks exact sample Exif/solar/link/report values, 11 filename patterns,
+4 real process timezones, the 54 stations, vendor hashes, README tables, HTML and contrast.
+Browser verification covers HTTP and file://, three timezones, malformed images, hostile filenames,
+manual position/direction, three map layers, clipboard, preview, dialog and 320/390px screens.
 
 ## Security Considerations
 
-This tool is designed for OSINT investigations:
-- **Ethical Use:** Only for authorized security research, journalism, OSINT
-- **Privacy Warning:** Shows security analysis of metadata privacy risks
-- **No Tracking:** Zero analytics, cookies, or external beacons
-- **Offline Capable:** Can run fully offline after initial CDN resource load
-
-When contributing, maintain:
-- No external data transmission (except map tiles)
-- No logging of sensitive information
-- Clear user warnings about metadata privacy risks
+Use only for authorized investigation, journalism and education.
+Images and Exif are not uploaded, but CDN requests and map tiles expose IP/origin and the viewed area.
+External link navigation sends the data encoded in the URL.
+Do not promise anonymity or secure erasure of browser memory.

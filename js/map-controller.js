@@ -7,7 +7,9 @@ class MapController {
     constructor() {
         this.map = null;
         this.currentMarker = null;
-        this.directionLine = null;
+        this.directionLayer = null;
+        this.directionSource = null;
+        this.isManualLocationMode = false;
         this.accuracyCircle = null;
         this.isDirectionMode = false;
         this.currentLocation = null;
@@ -31,7 +33,6 @@ class MapController {
         }
 
         if (this.isInitialized) {
-            console.log('[WhereShot] Map already initialized');
             return Promise.resolve();
         }
 
@@ -46,7 +47,6 @@ class MapController {
      */
     async _performMapInitialization(containerId, options) {
         try {
-            console.log('[WhereShot] Starting map initialization...');
 
             // デフォルトオプション
             const defaultOptions = {
@@ -58,11 +58,11 @@ class MapController {
 
             const mapOptions = { ...defaultOptions, ...options };
 
-            // 地図コンテナの準備を待機（改善版）
-            const container = await this._waitForContainer(containerId);
-            
-            // コンテナが表示されるまで待機（改善版）
-            await this._waitForContainerVisible(container);
+            // 解析結果を表示したあとで呼ぶ。非表示コンテナのポーリングはしない。
+            const container = document.getElementById(containerId);
+            if (!container || !container.getBoundingClientRect().height) {
+                throw new Error('地図の表示領域がありません');
+            }
 
             // 地図を作成
             this.map = L.map(containerId, {
@@ -84,8 +84,7 @@ class MapController {
             // コントロールを追加
             this.addCustomControls();
 
-            // 地図の準備完了を待機
-            await this._waitForMapReady();
+
 
             // 初期化完了フラグを設定
             this.isInitialized = true;
@@ -96,16 +95,16 @@ class MapController {
                 containerId: containerId
             });
 
-            console.log('[WhereShot] Map initialization completed successfully');
+            this.safeInvalidateSize();
 
         } catch (error) {
-            console.error('[WhereShot] Map initialization error:', error);
+            console.error('地図を初期化できませんでした');
             this.isInitialized = false;
             this.initializationPromise = null;
 
             // 初期化失敗イベントを発火
             this.dispatchEvent('mapInitializationFailed', {
-                error: error.message,
+                error: '地図を初期化できませんでした',
                 containerId: containerId
             });
 
@@ -114,182 +113,38 @@ class MapController {
     }
 
     /**
-     * コンテナの存在を待機
-     * @param {string} containerId - コンテナID
-     * @returns {Promise<HTMLElement>} コンテナ要素
-     */
-    _waitForContainer(containerId) {
-        return new Promise((resolve, reject) => {
-            const checkContainer = () => {
-                const container = document.getElementById(containerId);
-                if (container) {
-                    console.log('[WhereShot] Container found:', containerId);
-                    resolve(container);
-                } else {
-                    setTimeout(checkContainer, 50);
-                }
-            };
-
-            // 最大5秒待機（短縮）
-            setTimeout(() => {
-                reject(new Error(`Map container ${containerId} not found within timeout`));
-            }, 5000);
-
-            checkContainer();
-        });
-    }
-
-    /**
-     * コンテナが表示されるまで待機（改善版）
-     * @param {HTMLElement} container - コンテナ要素
-     * @returns {Promise<void>}
-     */
-    _waitForContainerVisible(container) {
-        return new Promise((resolve) => {
-            let attempts = 0;
-            const maxAttempts = 20; // 最大20回まで（2秒）
-            const checkInterval = 100; // 100ms間隔
-
-            const checkVisible = () => {
-                attempts++;
-                const rect = container.getBoundingClientRect();
-                const style = window.getComputedStyle(container);
-                const isVisible = rect.width > 0 && 
-                                rect.height > 0 && 
-                                container.offsetWidth > 0 && 
-                                container.offsetHeight > 0 &&
-                                style.display !== 'none' &&
-                                style.visibility !== 'hidden';
-                
-                if (isVisible) {
-                    console.log(`[WhereShot] Container is visible after ${attempts} attempts:`, {
-                        width: rect.width,
-                        height: rect.height,
-                        offsetWidth: container.offsetWidth,
-                        offsetHeight: container.offsetHeight
-                    });
-                    resolve();
-                } else if (attempts >= maxAttempts) {
-                    // 最大試行回数に達した場合は強制的に進む
-                    console.warn(`[WhereShot] Container visibility timeout after ${attempts} attempts, proceeding anyway`);
-                    resolve();
-                } else {
-                    // 進捗をログ出力（5回ごと）
-                    if (attempts % 5 === 0) {
-                        console.log(`[WhereShot] Still waiting for container visibility... (${attempts}/${maxAttempts})`);
-                    }
-                    setTimeout(checkVisible, checkInterval);
-                }
-            };
-
-            checkVisible();
-        });
-    }
-
-    /**
-     * 地図の準備完了を待機（改善版）
-     * @returns {Promise<void>}
-     */
-    _waitForMapReady() {
-        return new Promise((resolve) => {
-            const timeout = setTimeout(() => {
-                console.warn('[WhereShot] Map ready timeout, proceeding anyway');
-                this._performFinalSizeCalculation();
-                resolve();
-            }, 3000); // 3秒タイムアウト
-
-            if (this.map._loaded) {
-                // 既に読み込み完了している場合
-                clearTimeout(timeout);
-                this._performFinalSizeCalculation();
-                resolve();
-            } else {
-                // 読み込み完了を待機
-                this.map.whenReady(() => {
-                    clearTimeout(timeout);
-                    console.log('[WhereShot] Map whenReady event fired');
-                    this._performFinalSizeCalculation();
-                    resolve();
-                });
-            }
-        });
-    }
-
-    /**
-     * 最終的なサイズ計算を実行（改善版）
-     */
-    _performFinalSizeCalculation() {
-        // 即座に1回実行
-        this.safeInvalidateSize();
-
-        // 追加で段階的に実行（回数を減らす）
-        const sizeCalculationSteps = [200, 500];
-        
-        sizeCalculationSteps.forEach((delay, index) => {
-            setTimeout(() => {
-                this.safeInvalidateSize();
-                console.log(`[WhereShot] Additional size calculation ${index + 1} completed`);
-            }, delay);
-        });
-    }
-
-    /**
-     * 地図のサイズを安全に再計算（改善版）
+     * 地図のサイズを安全に再計算
      */
     safeInvalidateSize() {
-        if (!this.map) {
-            console.log('[WhereShot] Map not available for size invalidation');
-            return false;
-        }
-
-        if (!this.isInitialized) {
-            console.log('[WhereShot] Map not initialized for size invalidation');
-            return false;
-        }
-
-        try {
-            // コンテナの状態をチェック
-            const container = this.map.getContainer();
-            if (!container) {
-                console.log('[WhereShot] Map container not found');
-                return false;
-            }
-
-            const rect = container.getBoundingClientRect();
-            if (rect.width === 0 || rect.height === 0) {
-                console.log('[WhereShot] Container has zero dimensions, skipping size invalidation');
-                return false;
-            }
-
-            this.map.invalidateSize();
-            console.log('[WhereShot] Map size invalidated successfully');
-            return true;
-
-        } catch (error) {
-            console.warn('[WhereShot] Error invalidating map size:', error);
-            return false;
-        }
+        if (!this.map || !this.isInitialized) return false;
+        const rect = this.map.getContainer().getBoundingClientRect();
+        if (!rect.width || !rect.height) return false;
+        this.map.invalidateSize();
+        return true;
     }
-
     /**
      * ベースレイヤーを設定
      */
     setupBaseLayers() {
         // OpenStreetMap
-        this.layers.osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        this.layers.osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19
         });
 
         // 衛星画像（Esri）
-        this.layers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+        const satelliteUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+        this.layers.satellite = L.tileLayer(satelliteUrl, {
+            attribution: 'Tiles &copy; Esri &mdash; Esri, Vantor, Earthstar Geographics, and the GIS User Community',
             maxZoom: 18
         });
 
         // 地形図（OpenTopoMap）
         this.layers.terrain = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, '
+                + '<a href="https://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; '
+                + '<a href="https://opentopomap.org">OpenTopoMap</a> '
+                + '(<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
             maxZoom: 17
         });
 
@@ -310,11 +165,6 @@ class MapController {
         // 地図移動イベント
         this.map.on('moveend', (e) => {
             this.onMapMove(e);
-        });
-
-        // ズーム変更イベント
-        this.map.on('zoomend', (e) => {
-            this.onMapZoom(e);
         });
 
         // ウィンドウリサイズイベント（デバウンス付き）
@@ -338,45 +188,26 @@ class MapController {
             imperial: false
         }).addTo(this.map);
 
-        // レイヤーコントロール
-        const baseLayers = {
-            "OpenStreetMap": this.layers.osm,
-            "衛星画像": this.layers.satellite,
-            "地形図": this.layers.terrain
-        };
-
-        this.layerControl = L.control.layers(baseLayers, {}, {
-            position: 'topright',
-            collapsed: false
-        }).addTo(this.map);
+        // ベースレイヤーの切替は画面のselectに一本化する。
     }
 
     /**
-     * 地図クリックイベントハンドラ
+     * 地図クリックイベントハンドラー
      * @param {object} e - クリックイベント
      */
     onMapClick(e) {
         const { lat, lng } = e.latlng;
-
+        if (!WhereShotLogic.isValidLatLng(lat, lng)) return;
         if (this.isDirectionMode) {
-            // 方向設定モード
             this.setDirection(lat, lng);
+        } else if (this.isManualLocationMode) {
+            this.setLocation(lat, lng, { type: 'manual', centerMap: false });
+            this.dispatchEvent('locationChanged', { latitude: lat, longitude: lng });
         } else {
-            // 通常の位置設定モード
-            this.setLocation(lat, lng);
+            return;
         }
-
-        // 座標情報を更新
         this.updateCoordinateDisplay(lat, lng);
-
-        // カスタムイベントを発火
-        this.dispatchEvent('locationChanged', {
-            latitude: lat,
-            longitude: lng,
-            isDirectionMode: this.isDirectionMode
-        });
     }
-
     /**
      * 地図移動イベントハンドラ
      * @param {object} e - 移動イベント
@@ -387,15 +218,6 @@ class MapController {
     }
 
     /**
-     * ズーム変更イベントハンドラ
-     * @param {object} e - ズームイベント
-     */
-    onMapZoom(e) {
-        const zoom = this.map.getZoom();
-        console.log('[WhereShot] Map zoom changed:', zoom);
-    }
-
-    /**
      * 位置を設定
      * @param {number} latitude - 緯度
      * @param {number} longitude - 経度
@@ -403,6 +225,12 @@ class MapController {
      */
     setLocation(latitude, longitude, options = {}) {
         try {
+            if (!this.map || !WhereShotLogic.isValidLatLng(latitude, longitude)) return;
+            this.clearDirection();
+            if (this.accuracyCircle) {
+                this.map.removeLayer(this.accuracyCircle);
+                this.accuracyCircle = null;
+            }
             this.currentLocation = { latitude, longitude };
 
             // 既存のマーカーを削除
@@ -420,10 +248,16 @@ class MapController {
             // マーカーのドラッグイベント
             this.currentMarker.on('dragend', (e) => {
                 const position = e.target.getLatLng();
+                this.clearDirection();
                 this.currentLocation = {
                     latitude: position.lat,
                     longitude: position.lng
                 };
+                if (this.accuracyCircle) {
+                    this.map.removeLayer(this.accuracyCircle);
+                    this.accuracyCircle = null;
+                }
+                this.currentMarker.setPopupContent(this.createLocationPopup(position.lat, position.lng, {}));
                 this.updateCoordinateDisplay(position.lat, position.lng);
                 this.dispatchEvent('locationChanged', this.currentLocation);
             });
@@ -437,10 +271,10 @@ class MapController {
                 this.map.setView([latitude, longitude], options.zoom || this.map.getZoom());
             }
 
-            console.log('[WhereShot] Location set:', { latitude, longitude });
+
 
         } catch (error) {
-            console.error('[WhereShot] Error setting location:', error);
+            console.error('地図に位置を表示できませんでした');
             throw error;
         }
     }
@@ -457,7 +291,7 @@ class MapController {
             this.map.removeLayer(this.accuracyCircle);
         }
 
-        if (accuracy && accuracy > 0) {
+        if (Number.isFinite(accuracy) && accuracy > 0) {
             this.accuracyCircle = L.circle([latitude, longitude], {
                 radius: accuracy,
                 fillColor: '#3388ff',
@@ -472,144 +306,114 @@ class MapController {
     }
 
     /**
-     * 撮影方向を設定
+     * 撮影方向を設定（手動で選んだ終点を優先）
      * @param {number} endLat - 終点緯度
      * @param {number} endLng - 終点経度
      */
     setDirection(endLat, endLng) {
-        if (!this.currentLocation) {
+        if (!this.currentLocation || !WhereShotLogic.isValidLatLng(endLat, endLng)) {
             window.WhereShotUtils.UIUtils.showError('先に撮影位置を設定してください');
             return;
         }
+        const { latitude, longitude } = this.currentLocation;
+        const direction = WhereShotLogic.bearing(latitude, longitude, endLat, endLng);
+        const distance = WhereShotLogic.distanceM(latitude, longitude, endLat, endLng);
+        this.drawDirection(direction, distance, 'manual');
+    }
 
-        // 既存の方向線を削除
-        if (this.directionLine) {
-            this.map.removeLayer(this.directionLine);
+    /**
+     * Exifの方位を200mの矢印で表示
+     */
+    setExifDirection(direction) {
+        if (this.directionSource === 'manual') return;
+        if (Number.isFinite(direction) && this.currentLocation) {
+            this.drawDirection(direction, 200, 'exif');
         }
+    }
 
-        const startLat = this.currentLocation.latitude;
-        const startLng = this.currentLocation.longitude;
-
-        // 方向を計算
-        const direction = this.calculateBearing(startLat, startLng, endLat, endLng);
+    /**
+     * 本線と先端2本を一つのレイヤーとして保持
+     */
+    drawDirection(direction, distance, source) {
+        this.clearDirection();
+        if (!this.map || !this.currentLocation) return;
+        const { latitude, longitude } = this.currentLocation;
+        const end = WhereShotLogic.destinationPoint(latitude, longitude, direction, distance);
         this.currentDirection = direction;
-
-        // 方向線を描画
-        this.directionLine = L.polyline([
-            [startLat, startLng],
-            [endLat, endLng]
-        ], {
-            color: '#ff4444',
-            weight: 3,
-            opacity: 0.8,
-            dashArray: '5, 10'
-        }).addTo(this.map);
-
-        // 矢印を追加
-        this.addDirectionArrow(startLat, startLng, endLat, endLng);
-
-        // ポップアップを設定
-        const distance = window.WhereShotUtils.GeoUtils.calculateDistance(startLat, startLng, endLat, endLng);
-        this.directionLine.bindPopup(`
-            <strong>撮影方向</strong><br>
-            方位: ${direction.toFixed(1)}° (${this.degreesToCardinal(direction)})<br>
-            距離: ${distance.toFixed(0)}m
-        `);
-
-        console.log('[WhereShot] Direction set:', direction);
-
-        // イベントを発火
-        this.dispatchEvent('directionChanged', {
-            direction: direction,
-            distance: distance
-        });
+        this.directionSource = source;
+        this.directionLayer = L.layerGroup().addTo(this.map);
+        const options = { color: source === 'exif' ? '#67e8f9' : '#fca5a5', weight: 3 };
+        L.polyline([[latitude, longitude], [end.lat, end.lng]], options).addTo(this.directionLayer);
+        this.addDirectionArrow(end.lat, end.lng, direction, Math.min(40, Math.max(8, distance / 5)), options);
+        this.dispatchEvent('directionChanged', { direction, distance, source });
     }
 
     /**
-     * 方角を計算
-     * @param {number} lat1 - 開始点緯度
-     * @param {number} lng1 - 開始点経度
-     * @param {number} lat2 - 終了点緯度
-     * @param {number} lng2 - 終了点経度
-     * @returns {number} 方角（度）
+     * 矢印とその根拠をまとめてクリア
      */
-    calculateBearing(lat1, lng1, lat2, lng2) {
-        const dLng = (lng2 - lng1) * Math.PI / 180;
-        const lat1Rad = lat1 * Math.PI / 180;
-        const lat2Rad = lat2 * Math.PI / 180;
-
-        const y = Math.sin(dLng) * Math.cos(lat2Rad);
-        const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - 
-                  Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
-
-        let bearing = Math.atan2(y, x) * 180 / Math.PI;
-        return (bearing + 360) % 360;
+    clearDirection() {
+        if (this.directionLayer && this.map) this.map.removeLayer(this.directionLayer);
+        this.directionLayer = null;
+        this.currentDirection = null;
+        this.directionSource = null;
     }
-
     /**
-     * 方向矢印を追加
-     * @param {number} startLat - 開始点緯度
-     * @param {number} startLng - 開始点経度
-     * @param {number} endLat - 終了点緯度
-     * @param {number} endLng - 終了点経度
+     * 球面上の終点から後方へ矢印の先端を描く
      */
-    addDirectionArrow(startLat, startLng, endLat, endLng) {
-        const arrowIcon = L.divIcon({
-            className: 'direction-arrow',
-            html: '▶',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
-        });
-
-        const arrowMarker = L.marker([endLat, endLng], {
-            icon: arrowIcon
-        }).addTo(this.map);
-
-        // 矢印を方向に回転
-        const bearing = this.calculateBearing(startLat, startLng, endLat, endLng);
-        const arrowElement = arrowMarker.getElement();
-        if (arrowElement) {
-            arrowElement.style.transform += ` rotate(${bearing}deg)`;
+    addDirectionArrow(endLat, endLng, direction, length, options) {
+        for (const angle of [direction + 150, direction + 210]) {
+            const point = WhereShotLogic.destinationPoint(endLat, endLng, angle, length);
+            L.polyline([[endLat, endLng], [point.lat, point.lng]], options).addTo(this.directionLayer);
         }
     }
-
     /**
-     * レイヤーを切り替え
+     * レイヤーを切り替え（常に一つだけ）
      * @param {string} layerName - レイヤー名
      */
     switchLayer(layerName) {
-        if (this.layers[layerName] && this.currentLayer !== layerName) {
-            // 現在のレイヤーを削除
-            this.map.removeLayer(this.layers[this.currentLayer]);
-            
-            // 新しいレイヤーを追加
-            this.layers[layerName].addTo(this.map);
-            this.currentLayer = layerName;
-
-            console.log('[WhereShot] Layer switched to:', layerName);
+        if (!this.map || !this.layers[layerName]) return;
+        for (const layer of Object.values(this.layers)) {
+            if (this.map.hasLayer(layer)) this.map.removeLayer(layer);
         }
+        this.layers[layerName].addTo(this.map);
+        this.currentLayer = layerName;
     }
-
     /**
      * 方向設定モードを切り替え
      * @param {boolean} enabled - 有効/無効
      */
     toggleDirectionMode(enabled) {
         this.isDirectionMode = enabled;
-        
         if (enabled) {
-            this.map.getContainer().style.cursor = 'crosshair';
+            this.isManualLocationMode = false;
             window.WhereShotUtils.UIUtils.showSuccess('地図をクリックして撮影方向を設定してください');
         } else {
-            this.map.getContainer().style.cursor = '';
-            if (this.directionLine) {
-                this.map.removeLayer(this.directionLine);
-                this.directionLine = null;
-                this.currentDirection = null;
-            }
+            this.clearDirection();
+            this.dispatchEvent('directionChanged', { direction: null, source: null });
         }
+        this.updateModeControls();
     }
 
+    /**
+     * 位置設定と方向設定は排他にする
+     */
+    toggleManualLocationMode(enabled) {
+        this.isManualLocationMode = enabled;
+        if (enabled) {
+            this.isDirectionMode = false;
+            window.WhereShotUtils.UIUtils.showSuccess('地図をクリックして撮影位置を指定してください');
+        }
+        this.updateModeControls();
+    }
+
+    /**
+     * モードの表示と読み上げ状態を同期
+     */
+    updateModeControls() {
+        this.map?.getContainer().classList.toggle('map-picking', this.isDirectionMode || this.isManualLocationMode);
+        document.getElementById('manual-location-btn').setAttribute('aria-pressed', String(this.isManualLocationMode));
+        document.getElementById('direction-mode-btn').setAttribute('aria-pressed', String(this.isDirectionMode));
+    }
     /**
      * 位置アイコンを作成
      * @param {string} type - アイコンタイプ
@@ -637,7 +441,8 @@ class MapController {
                     ...iconOptions,
                     iconUrl: 'data:image/svg+xml;base64,' + btoa(`
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#dc2626">
-                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            <path d="M12 2C8.13 2 5 5.13 5 9
+                        c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                         </svg>
                     `)
                 });
@@ -646,7 +451,8 @@ class MapController {
                     ...iconOptions,
                     iconUrl: 'data:image/svg+xml;base64,' + btoa(`
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#059669">
-                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            <path d="M12 2C8.13 2 5 5.13 5 9
+                        c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                         </svg>
                     `)
                 });
@@ -654,42 +460,51 @@ class MapController {
     }
 
     /**
-     * 位置ポップアップを作成
+     * 位置ポップアップをDOMで作成
      * @param {number} latitude - 緯度
      * @param {number} longitude - 経度
      * @param {object} options - オプション
-     * @returns {string} HTMLコンテンツ
+     * @returns {HTMLElement} ポップアップ
      */
-    createLocationPopup(latitude, longitude, options) {
-        const coords = window.WhereShotUtils.GeoUtils.formatCoordinates(latitude, longitude);
-        
-        return `
-            <div class="location-popup">
-                <h4>📍 撮影位置</h4>
-                <p><strong>座標:</strong><br>${coords}</p>
-                ${options.accuracy ? `<p><strong>GPS精度:</strong> ±${options.accuracy.toFixed(1)}m</p>` : ''}
-                ${options.dateTime ? `<p><strong>日時:</strong><br>${window.WhereShotUtils.DateUtils.formatDateTime(options.dateTime)}</p>` : ''}
-                <div class="popup-actions">
-                    <button onclick="window.WhereShotMapController.copyCoordinates(${latitude}, ${longitude})" class="btn btn-link">座標をコピー</button>
-                </div>
-            </div>
-        `;
+    createLocationPopup(latitude, longitude, options = {}) {
+        const root = document.createElement('div');
+        root.className = 'location-popup';
+        const heading = document.createElement('h3');
+        heading.textContent = '📍 撮影位置';
+        const coordinates = document.createElement('p');
+        coordinates.textContent = latitude.toFixed(6) + ', ' + longitude.toFixed(6)
+            + '\n' + WhereShotLogic.decimalToDms(latitude, true) + ', ' + WhereShotLogic.decimalToDms(longitude, false);
+        root.append(heading, coordinates);
+        if (Number.isFinite(options.accuracy)) {
+            const accuracy = document.createElement('p');
+            accuracy.textContent = 'GPS精度: ±' + options.accuracy.toFixed(1) + 'm';
+            root.append(accuracy);
+        }
+        const actions = document.createElement('div');
+        actions.className = 'popup-actions';
+        const copy = document.createElement('button');
+        copy.type = 'button';
+        copy.className = 'btn btn-link';
+        copy.textContent = '座標をコピー';
+        copy.addEventListener('click', () => this.copyCoordinates(latitude, longitude));
+        actions.append(copy);
+        root.append(actions);
+        return root;
     }
-
     /**
      * 座標をクリップボードにコピー
      * @param {number} latitude - 緯度
      * @param {number} longitude - 経度
      */
-    copyCoordinates(latitude, longitude) {
-        const coords = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-        navigator.clipboard.writeText(coords).then(() => {
+    async copyCoordinates(latitude, longitude) {
+        try {
+            if (!navigator.clipboard?.writeText) throw new Error('コピー非対応');
+            await navigator.clipboard.writeText(latitude.toFixed(6) + ', ' + longitude.toFixed(6));
             window.WhereShotUtils.UIUtils.showSuccess('座標をコピーしました');
-        }).catch(() => {
-            window.WhereShotUtils.UIUtils.showError('座標のコピーに失敗しました');
-        });
+        } catch {
+            window.WhereShotUtils.UIUtils.showError('コピーできませんでした。座標を選択してコピーしてください');
+        }
     }
-
     /**
      * 座標表示を更新
      * @param {number} latitude - 緯度
@@ -700,18 +515,6 @@ class MapController {
         if (coordElement) {
             coordElement.textContent = `座標: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
         }
-    }
-
-    /**
-     * 度を方角に変換
-     * @param {number} degrees - 度
-     * @returns {string} 方角
-     */
-    degreesToCardinal(degrees) {
-        const directions = ['北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東',
-                          '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西'];
-        const index = Math.round(degrees / 22.5) % 16;
-        return directions[index];
     }
 
     /**
@@ -736,10 +539,7 @@ class MapController {
             this.currentMarker = null;
         }
         
-        if (this.directionLine) {
-            this.map.removeLayer(this.directionLine);
-            this.directionLine = null;
-        }
+        this.clearDirection();
         
         if (this.accuracyCircle) {
             this.map.removeLayer(this.accuracyCircle);
@@ -751,12 +551,8 @@ class MapController {
         this.currentDirection = null;
         this.isDirectionMode = false;
 
-        // カーソルをリセット
-        if (this.map) {
-            this.map.getContainer().style.cursor = '';
-        }
-
-        console.log('[WhereShot] Map reset');
+        this.isManualLocationMode = false;
+        this.updateModeControls();
     }
 
     /**
