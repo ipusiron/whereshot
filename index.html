@@ -4,14 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WhereShot - 撮影時刻・場所解析ツール</title>
-    <meta name="description" content="画像・動画から撮影時刻・場所を解析するOSINT支援ツール">
+    <meta name="description" content="画像のExif・UTCオフセット・太陽位置・地図から撮影時刻と場所を検証するOSINT支援ツール">
     <meta name="author" content="IPUSIRON">
     
     <!-- セキュリティヘッダー -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:">
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com;
+        style-src 'self' https://cdnjs.cloudflare.com;
+        img-src 'self' data: blob: https://tile.openstreetmap.org https://server.arcgisonline.com https://*.tile.opentopomap.org;
+        connect-src 'none'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <!-- OSMタイル利用規約のReferer要件を満たし、配信元にはオリジンだけを送ります。 -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"
+        integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
+        crossorigin="anonymous">
     
     <!-- アプリケーションCSS -->
     <link rel="stylesheet" href="css/style.css">
@@ -20,6 +28,7 @@
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📸</text></svg>">
 </head>
 <body>
+    <noscript>このツールを使うにはJavaScriptを有効にしてください。画像とExifは送信しません。</noscript>
     <div class="app-container">
         <!-- ヘッダー -->
         <header class="app-header">
@@ -39,20 +48,22 @@
         <main class="main-content">
             <!-- ファイルアップロード エリア -->
             <section class="upload-section">
-                <div id="drop-zone" class="drop-zone">
+                <div id="drop-zone" class="drop-zone" aria-describedby="supported-formats">
                     <div class="drop-zone-content">
                         <div class="upload-icon">📸</div>
-                        <h3>画像をドラッグ&ドロップ</h3>
+                        <h2 id="upload-title">画像をドラッグ&ドロップ</h2>
+                        <p id="upload-filename"></p>
                         <p>または <button id="file-select-btn" class="btn btn-primary">ファイルを選択</button></p>
-                        <small>対応形式: JPEG, PNG, TIFF, MP4</small>
+                        <small id="supported-formats">対応形式: JPEG, PNG, TIFF, WebP, HEIC/HEIF（100MB以下）</small>
                     </div>
-                    <input type="file" id="file-input" accept="image/*,video/mp4" style="display: none;">
+                    <label for="file-input" class="sr-only">解析する画像ファイル</label>
+                    <input type="file" id="file-input" accept="image/jpeg,image/png,image/tiff,image/webp,image/heic,image/heif" hidden>
                 </div>
 
                 <!-- 画像プレビューエリア -->
-                <div id="image-preview" class="image-preview" style="display: none;">
+                <div id="image-preview" class="image-preview" hidden>
                     <div class="preview-header">
-                        <h3>📁 アップロードファイル</h3>
+                        <h2>📁 アップロードファイル</h2>
                         <div class="preview-controls">
                             <button id="toggle-preview-btn" class="btn btn-secondary">🔍 プレビュー表示</button>
                             <button id="change-file-btn" class="btn btn-secondary">📂 別ファイル選択</button>
@@ -65,12 +76,15 @@
                                 <p><strong>📄 ファイル名:</strong> <span id="file-name">-</span></p>
                                 <p><strong>📊 ファイルサイズ:</strong> <span id="file-size">-</span></p>
                                 <p><strong>🎭 形式:</strong> <span id="file-type">-</span></p>
-                                <p><strong>📅 更新日:</strong> <span id="file-modified">-</span></p>
+                                <p><strong>📅 更新日（UTC）:</strong> <span id="file-modified">-</span></p>
+                                <p class="hash-row"><strong>SHA-256:</strong> <span id="file-sha256">-</span></p>
+                                <button id="copy-sha256-btn" class="btn btn-secondary" disabled>SHA-256をコピー</button>
                             </div>
                         </div>
                         
-                        <div id="image-display" class="image-display" style="display: none;">
-                            <img id="preview-img" src="" alt="プレビュー画像" />
+                        <div id="image-display" class="image-display" hidden>
+                            <img id="preview-img" alt="プレビュー画像">
+                            <p id="preview-message" role="status"></p>
                             <div class="privacy-notice">
                                 <small>🔒 プライバシー保護: 画像はローカルでのみ表示され、外部に送信されません</small>
                             </div>
@@ -80,26 +94,26 @@
             </section>
 
             <!-- 解析結果表示エリア -->
-            <div id="analysis-results" class="analysis-results" style="display: none;">
+            <div id="analysis-results" class="analysis-results" hidden>
                 
                 <!-- Exif情報パネル -->
                 <section class="info-panel">
-                    <h2>📊 Exif メタデータ</h2>
+                    <h2>📊 Exifメタデータ</h2>
                     <div class="info-grid">
                         <div class="info-card">
-                            <h4>📅 撮影日時</h4>
+                            <h3>📅 撮影日時</h3>
                             <div id="datetime-info" class="info-content">-</div>
                         </div>
                         <div class="info-card">
-                            <h4>📍 GPS位置</h4>
+                            <h3>📍 GPS位置</h3>
                             <div id="gps-info" class="info-content">-</div>
                         </div>
                         <div class="info-card">
-                            <h4>📷 カメラ情報</h4>
+                            <h3>📷 カメラ情報</h3>
                             <div id="camera-info" class="info-content">-</div>
                         </div>
                         <div class="info-card">
-                            <h4>⚙️ 撮影設定</h4>
+                            <h3>⚙️ 撮影設定</h3>
                             <div id="settings-info" class="info-content">-</div>
                         </div>
                     </div>
@@ -111,20 +125,21 @@
                             <div class="estimated-datetime">
                                 <div class="estimation-header">
                                     <h4>推定日時</h4>
-                                    <button id="set-estimated-datetime-btn" class="btn btn-primary" style="display: none;">
+                                    <button id="set-estimated-datetime-btn" class="btn btn-primary" hidden>
                                         📅 解析日時にセット
                                     </button>
                                 </div>
                                 <div id="estimated-datetime-value" class="estimation-value">-</div>
                                 <div id="estimation-confidence" class="estimation-confidence">-</div>
+                                <p class="estimation-note">メタデータどうしの食い違いの少なさを示す値です。Exif・ファイル名・更新日時は書き換えられます</p>
                             </div>
                             
-                            <div id="estimation-warnings" class="estimation-warnings" style="display: none;">
+                            <div id="estimation-warnings" class="estimation-warnings" aria-live="polite" hidden>
                                 <!-- 警告メッセージがここに表示される -->
                             </div>
                             
                             <div class="estimation-sources">
-                                <h5>日時ソース</h5>
+                                <h4>日時ソース</h4>
                                 <div id="datetime-sources" class="sources-list">
                                     <div class="source-item">
                                         <span class="source-type">解析待機中...</span>
@@ -139,8 +154,9 @@
                 <section class="map-panel">
                     <h2>🗺️ 撮影地点マップ</h2>
                     <div class="map-controls">
-                        <button id="manual-location-btn" class="btn btn-secondary">手動で位置指定</button>
-                        <button id="direction-mode-btn" class="btn btn-secondary">撮影方向を設定</button>
+                        <button id="manual-location-btn" class="btn btn-secondary" aria-pressed="false">手動で位置指定</button>
+                        <button id="direction-mode-btn" class="btn btn-secondary" aria-pressed="false">撮影方向を設定</button>
+                        <label for="map-layer-select">地図の種類</label>
                         <select id="map-layer-select" class="form-select">
                             <option value="osm">OpenStreetMap</option>
                             <option value="satellite">衛星画像</option>
@@ -149,8 +165,7 @@
                     </div>
                     <!-- 地図コンテナ - 修正版 -->
                     <div class="map-wrapper">
-                        <div id="map" class="map-container map-initializing" 
-                             style="width: 100%; height: 500px; min-height: 400px; background: var(--bg-card); position: relative;">
+                        <div id="map" class="map-container map-initializing">
                         </div>
                         <div class="map-info">
                             <small id="map-coordinates">地図を読み込み中...</small>
@@ -158,31 +173,42 @@
                     </div>
                 </section>
 
+                <p id="direction-info" class="direction-info">撮影方位: 記録なし</p>
+                <p class="map-privacy-notice">地図を表示すると、表示している範囲のタイル番号が地図の配信元（OpenStreetMap、選んだ場合はEsri・OpenTopoMap）に送られます。画像とExifは送信しません</p>
+
                 <!-- 太陽位置計算パネル -->
                 <section class="sun-panel">
                     <h2>🌞 太陽位置・影解析</h2>
                     <div class="sun-controls">
-                        <label for="analysis-date">解析日時:</label>
-                        <input type="datetime-local" id="analysis-date" class="form-input">
+                        <label for="analysis-date">解析日時（撮影地の現地時刻）</label>
+                        <input type="datetime-local" id="analysis-date" class="form-input" step="1">
+                        <label for="utc-offset">撮影地のUTCオフセット</label>
+                        <select id="utc-offset" class="form-select" aria-describedby="utc-offset-source"></select>
                         <button id="calculate-sun-btn" class="btn btn-primary">計算実行</button>
+                        <a id="suncalc-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-link">SunCalc.org</a>
                     </div>
-                    <div id="sun-results" class="sun-results">
+                    <p id="utc-offset-source" aria-live="polite"></p>
+                    <div id="sun-results" class="sun-results" aria-live="polite">
                         <div class="sun-info-grid">
                             <div class="sun-info-card">
-                                <h4>☀️ 太陽高度</h4>
+                                <h3>☀️ 太陽高度</h3>
                                 <div id="sun-elevation" class="sun-value">-</div>
                             </div>
                             <div class="sun-info-card">
-                                <h4>🧭 太陽方位</h4>
+                                <h3>🧭 太陽方位</h3>
                                 <div id="sun-azimuth" class="sun-value">-</div>
                             </div>
                             <div class="sun-info-card">
-                                <h4>🌅 時間帯</h4>
+                                <h3>🌅 時間帯</h3>
                                 <div id="sun-phase" class="sun-value">-</div>
                             </div>
                             <div class="sun-info-card">
-                                <h4>🔗 詳細確認</h4>
-                                <a id="suncalc-link" href="#" target="_blank" class="btn btn-link">SunCalc.org</a>
+                                <h3>影の方向</h3>
+                                <div id="shadow-direction" class="sun-value">-</div>
+                            </div>
+                            <div class="sun-info-card">
+                                <h3>影の長さ</h3>
+                                <div id="shadow-length" class="sun-value">-</div>
                             </div>
                         </div>
                     </div>
@@ -193,22 +219,28 @@
                     <h2>🌐 外部データ連携</h2>
                     <div class="external-links">
                         <div class="link-group">
-                            <h4>🛰️ 衛星画像・気象データ</h4>
+                            <h3>🛰️ 衛星画像・気象データ</h3>
                             <a id="nasa-worldview-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-external">NASA Worldview</a>
                             <a id="weather-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-external">過去の天気</a>
+                            <p id="weather-note" class="link-note"></p>
                         </div>
                         <div class="link-group">
-                            <h4>🗾 地理院地図・空中写真</h4>
+                            <h3>🗾 地理院地図・空中写真</h3>
                             <a id="gsi-map-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-external">地理院地図</a>
                             <a id="gsi-photo-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-external">空中写真</a>
                         </div>
                         <div class="link-group">
-                            <h4>🔍 その他の検証ツール</h4>
+                            <h3>🔍 その他の検証ツール</h3>
                             <a id="streetview-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-external">Street View</a>
                             <a id="reverse-image-link" href="https://images.google.com/" target="_blank" rel="noopener noreferrer" class="btn btn-external">Google画像検索を開く</a>
                             <small>※ プレビュー画像を右クリック → 「Googleで画像を検索」 で利用できます</small>
                         </div>
                     </div>
+                </section>
+                <section class="report-panel">
+                    <h2>解析レポート</h2>
+                    <button id="copy-report-btn" class="btn btn-primary" disabled>解析結果をコピー</button>
+                    <pre id="report-preview"></pre>
                 </section>
             </div>
         </main>
@@ -218,17 +250,17 @@
 
         <!-- フッター -->
         <footer class="app-footer">
-            <div class="footer" style="text-align: center;">
-                🔗 GitHubリポジトリはこちら（<a href="https://github.com/ipusiron/whereshot" target="_blank" style="color: #007bff; text-decoration: none;">ipusiron/whereshot</a>）
+            <div class="footer">
+                🔗 GitHubリポジトリーはこちら（<a href="https://github.com/ipusiron/whereshot" target="_blank" rel="noopener noreferrer">ipusiron/whereshot</a>）
             </div>
         </footer>
     </div>
 
     <!-- ヘルプモーダル -->
-    <div id="help-modal" class="modal" style="display: none;">
+    <dialog id="help-dialog" class="modal" aria-labelledby="help-title">
         <div class="modal-content">
-            <span class="modal-close">&times;</span>
-            <h2>WhereShot 使用方法</h2>
+            <button type="button" class="modal-close" aria-label="閉じる">&times;</button>
+            <h2 id="help-title">WhereShot使用方法</h2>
             <div class="help-content">
                 <h3>🚀 基本的な使い方</h3>
                 <ol>
@@ -241,11 +273,13 @@
                 
                 <h3>🔒 プライバシー保護</h3>
                 <ul>
-                    <li>すべての処理はブラウザ内で完結</li>
+                    <li>すべての処理はブラウザー内で完結</li>
                     <li>画像・メタデータは外部送信されません</li>
-                    <li>安全なOSINT調査が可能</li>
+                    <li>地図を表示すると、表示範囲のタイル番号が地図の配信元に送られる（画像とExifは送信しない）</li>
                 </ul>
                 
+                <h3>UTCオフセット</h3>
+                <p>解析日時は撮影地の現地時刻です。Exifのオフセット、GPS時刻との差、ブラウザーの順に候補を選びます。撮影地やカメラの時計に合わせて選び直してください。</p>
                 <h3>⚠️ 注意事項</h3>
                 <ul>
                     <li>GPS情報がない画像は手動で位置指定が必要</li>
@@ -254,59 +288,23 @@
                 </ul>
             </div>
         </div>
-    </div>
+    </dialog>
+    <div id="toast-region" aria-live="polite"></div>
 
-    <!-- JavaScript ライブラリ -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js" integrity="sha512-xsoiisGNT6Dw2Le1Cocn5305Uje1pOYeSzrpO3RD9K+JTpVH9KqSXksXqur8cobTEKJcFz0COYq4723mzo88/Q==" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js" integrity="sha512-F6rjAEKNMtM0aODcc/MdnAvhGxn7FCbAkKJ5FKba/fnD3gnN+LBEok326WAMdOhKQKYNr+j/tJEuV1PKwIfhCA==" crossorigin="anonymous"></script>
-    
-    <!-- アプリケーションスクリプト -->
-    <script src="js/utils.js"></script>
-    <script src="js/exif-parser.js"></script>
-    <script src="js/datetime-estimator.js"></script>
-    <script src="js/sun-calculator.js"></script>
-    <script src="js/map-controller.js"></script>
-    <script src="js/main.js"></script>
+    <!-- JavaScript ライブラリー -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer
+        integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g=="
+        crossorigin="anonymous"></script>
+    <script src="vendor/exifreader/exif-reader.min.js" defer></script>
+    <script src="vendor/suncalc/suncalc.js" defer></script>
 
-    <!-- 地図初期化管理スクリプト -->
-    <script>
-        // 地図初期化の状態管理
-        document.addEventListener('DOMContentLoaded', function() {
-            const mapContainer = document.getElementById('map');
-            
-            // 地図初期化完了イベントリスナー
-            document.addEventListener('whereshot:mapInitialized', function() {
-                if (mapContainer) {
-                    mapContainer.classList.remove('map-initializing');
-                    mapContainer.classList.add('map-ready');
-                    
-                    // 座標表示を更新
-                    const mapCoordinates = document.getElementById('map-coordinates');
-                    if (mapCoordinates) {
-                        mapCoordinates.textContent = 'クリックして座標を取得';
-                    }
-                    
-                    console.log('[WhereShot] Map UI state updated to ready');
-                }
-            });
-
-            // 地図初期化失敗イベントリスナー
-            document.addEventListener('whereshot:mapInitializationFailed', function(e) {
-                if (mapContainer) {
-                    mapContainer.classList.remove('map-initializing');
-                    mapContainer.classList.add('map-error');
-                    
-                    // エラーメッセージを表示
-                    const mapCoordinates = document.getElementById('map-coordinates');
-                    if (mapCoordinates) {
-                        mapCoordinates.textContent = '地図の読み込みに失敗しました';
-                    }
-                    
-                    console.error('[WhereShot] Map initialization failed:', e.detail);
-                }
-            });
-        });
-    </script>
+    <!-- アプリケーションスクリプト（file://でも同じ観測所を読む） -->
+    <script src="data/stations.js" defer></script>
+    <script src="js/whereshot-logic.js" defer></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/exif-parser.js" defer></script>
+    <script src="js/sun-calculator.js" defer></script>
+    <script src="js/map-controller.js" defer></script>
+    <script src="js/main.js" defer></script>
 </body>
 </html>

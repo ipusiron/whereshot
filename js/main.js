@@ -11,6 +11,9 @@ class WhereShotApp {
     this.currentEstimationResult = null;
     this.isInitialized = false;
     this.mapInitialized = false;
+    this.fileGeneration = 0;
+    this.previewUrl = null;
+    this.sha256 = null;
   }
 
   /**
@@ -18,321 +21,50 @@ class WhereShotApp {
    */
   async initialize() {
     try {
-      console.log('[WhereShot] Initializing application...');
-
       // DOM要素の準備を待つ
       if (document.readyState === 'loading') {
         await new Promise((resolve) => {
-          document.addEventListener('DOMContentLoaded', resolve);
+          document.addEventListener('DOMContentLoaded', resolve, { once: true });
         });
       }
 
       // UIイベントリスナーを設定（地図より先に）
+      this.setupOffsetChoices();
       this.setupEventListeners();
-
-      // 観測所データを読み込む（エラーハンドリング強化）
-      await this.loadStationsData();
-
-      // セキュリティ設定
-      this.setupSecurity();
-
-      // 外部リンクの初期設定
       this.initializeExternalLinks();
-
-      // 地図の初期化は最後に、かつ非同期で
-      this.initializeMapWhenReady();
-
       this.isInitialized = true;
-      console.log('[WhereShot] Application initialized successfully');
-
-      // 初期化完了を通知
-      this.showWelcomeMessage();
-    } catch (error) {
-      console.error('[WhereShot] Initialization error:', error);
-      window.WhereShotUtils.UIUtils.showError(
-        'アプリケーションの初期化に失敗しました。HTTPサーバー経由でアクセスしてください。'
-      );
+    } catch {
+      console.error('アプリケーションを初期化できませんでした');
+      window.WhereShotUtils.UIUtils.showError('アプリケーションの初期化に失敗しました。再読み込みしてください。');
     }
   }
 
   /**
-   * 地図を適切なタイミングで初期化
+   * 撮影地で使われるUTCオフセットの候補を表示
    */
-  async initializeMapWhenReady() {
-    try {
-      // 少し遅らせて、他の要素が完全に準備されてから地図を初期化
-      setTimeout(async () => {
-        await this.initializeMap();
-      }, 500);
-    } catch (error) {
-      console.error('[WhereShot] Map initialization deferred error:', error);
+  setupOffsetChoices() {
+    const select = document.getElementById('utc-offset');
+    for (const offset of WhereShotLogic.OFFSET_CHOICES) {
+      const option = document.createElement('option');
+      option.value = String(offset);
+      option.textContent = 'UTC' + WhereShotLogic.formatOffset(offset);
+      select.append(option);
     }
+    select.value = '0';
   }
-
   /**
-   * 地図を初期化
+   * 結果パネルが表示された直後に一度だけ地図を初期化
    */
   async initializeMap() {
-    try {
-      console.log('[WhereShot] Initializing map...');
-      
-      await window.WhereShotMapController.initializeMap('map', {
-        center: [35.6762, 139.6503], // 東京
-        zoom: 10,
-      });
-      
-      this.mapInitialized = true;
-      console.log('[WhereShot] Map initialization completed');
-      
-    } catch (error) {
-      console.error('[WhereShot] Map initialization failed:', error);
-      window.WhereShotUtils.UIUtils.showError('地図の初期化に失敗しました');
-    }
+    const exif = this.currentExifData;
+    const hasGPS = WhereShotLogic.isValidLatLng(exif?.latitude, exif?.longitude);
+    await window.WhereShotMapController.initializeMap('map', {
+      center: hasGPS ? [exif.latitude, exif.longitude] : [35.6762, 139.6503],
+      zoom: hasGPS ? 15 : 10,
+    });
+    this.mapInitialized = true;
+    window.WhereShotMapController.safeInvalidateSize();
   }
-
-  /**
-   * 観測所データを読み込む
-   */
-  async loadStationsData() {
-    try {
-      // ファイルプロトコルの検出
-      if (window.location.protocol === 'file:') {
-        console.warn('[WhereShot] File protocol detected. Using fallback station data.');
-        this.initializeFallbackStations();
-        return;
-      }
-
-      // HTTPサーバー経由での読み込み
-      const response = await fetch('data/stations.json');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      window.WhereShotStations = data;
-      console.log(`[WhereShot] 観測所 ${data.length} 件を読み込みました`);
-      
-    } catch (error) {
-      console.error('[WhereShot] stations.json の読み込みに失敗:', error);
-      this.initializeFallbackStations();
-      
-      // ユーザーに適切なガイダンスを表示
-      if (window.location.protocol === 'file:') {
-        this.showFileProtocolWarning();
-      }
-    }
-  }
-
-  /**
-   * フォールバック用の観測所データを初期化（20件）
-   */
-  initializeFallbackStations() {
-    window.WhereShotStations = [
-      // 北海道
-      {
-        "name": "札幌",
-        "lat": 43.0642,
-        "lng": 141.3469,
-        "prec_no": 14,
-        "block_no": 47412
-      },
-      {
-        "name": "函館",
-        "lat": 41.7688,
-        "lng": 140.7288,
-        "prec_no": 23,
-        "block_no": 47430
-      },
-      // 東北
-      {
-        "name": "盛岡",
-        "lat": 39.7036,
-        "lng": 141.1527,
-        "prec_no": 33,
-        "block_no": 47584
-      },
-      {
-        "name": "仙台",
-        "lat": 38.2688,
-        "lng": 140.8721,
-        "prec_no": 34,
-        "block_no": 47590
-      },
-      {
-        "name": "福島",
-        "lat": 37.7608,
-        "lng": 140.4747,
-        "prec_no": 36,
-        "block_no": 47595
-      },
-      {
-        "name": "秋田",
-        "lat": 39.7186,
-        "lng": 140.1024,
-        "prec_no": 32,
-        "block_no": 47582
-      },
-      // 関東
-      {
-        "name": "東京",
-        "lat": 35.6895,
-        "lng": 139.6917,
-        "prec_no": 44,
-        "block_no": 47662
-      },
-      {
-        "name": "横浜",
-        "lat": 35.4437,
-        "lng": 139.638,
-        "prec_no": 46,
-        "block_no": 47670
-      },
-      {
-        "name": "水戸",
-        "lat": 36.3658,
-        "lng": 140.4714,
-        "prec_no": 40,
-        "block_no": 47629
-      },
-      {
-        "name": "宇都宮",
-        "lat": 36.5484,
-        "lng": 139.8837,
-        "prec_no": 41,
-        "block_no": 47615
-      },
-      // 中部
-      {
-        "name": "名古屋",
-        "lat": 35.1815,
-        "lng": 136.9066,
-        "prec_no": 51,
-        "block_no": 47636
-      },
-      {
-        "name": "新潟",
-        "lat": 37.9026,
-        "lng": 139.0235,
-        "prec_no": 54,
-        "block_no": 47604
-      },
-      {
-        "name": "金沢",
-        "lat": 36.5946,
-        "lng": 136.6256,
-        "prec_no": 56,
-        "block_no": 47605
-      },
-      // 関西
-      {
-        "name": "大阪",
-        "lat": 34.6937,
-        "lng": 135.5023,
-        "prec_no": 62,
-        "block_no": 47772
-      },
-      {
-        "name": "神戸",
-        "lat": 34.6901,
-        "lng": 135.1955,
-        "prec_no": 63,
-        "block_no": 47770
-      },
-      // 中国・四国
-      {
-        "name": "広島",
-        "lat": 34.3963,
-        "lng": 132.4592,
-        "prec_no": 67,
-        "block_no": 47765
-      },
-      {
-        "name": "高松",
-        "lat": 34.3403,
-        "lng": 134.0434,
-        "prec_no": 72,
-        "block_no": 47891
-      },
-      {
-        "name": "松山",
-        "lat": 33.8392,
-        "lng": 132.7657,
-        "prec_no": 73,
-        "block_no": 47887
-      },
-      // 九州・沖縄
-      {
-        "name": "福岡",
-        "lat": 33.5902,
-        "lng": 130.4017,
-        "prec_no": 82,
-        "block_no": 47807
-      },
-      {
-        "name": "鹿児島",
-        "lat": 31.5966,
-        "lng": 130.5571,
-        "prec_no": 88,
-        "block_no": 47827
-      },
-      {
-        "name": "那覇",
-        "lat": 26.2124,
-        "lng": 127.6809,
-        "prec_no": 91,
-        "block_no": 47936
-      }
-    ];
-    console.log(`[WhereShot] フォールバック観測所データ ${window.WhereShotStations.length} 件を使用中`);
-  }
-
-  /**
-   * ファイルプロトコル警告を表示
-   */
-  showFileProtocolWarning() {
-    const warningDiv = document.createElement('div');
-    warningDiv.className = 'file-protocol-warning';
-    warningDiv.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: white;
-      padding: 1rem;
-      text-align: center;
-      z-index: 1002;
-      font-weight: 600;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    `;
-    
-    warningDiv.innerHTML = `
-      <div>
-        ⚠️ <strong>重要:</strong> より良い動作のため、HTTPサーバー経由でアクセスしてください
-        <br>
-        <small style="opacity: 0.9; margin-top: 0.5rem; display: block;">
-          推奨: <code>python -m http.server 8000</code> 実行後、
-          <code>http://localhost:8000</code> でアクセス
-        </small>
-        <button onclick="this.parentElement.parentElement.remove()" 
-                style="margin-left: 1rem; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.2); 
-                       border: none; border-radius: 0.25rem; color: white; cursor: pointer;">
-          ×
-        </button>
-      </div>
-    `;
-    
-    document.body.insertBefore(warningDiv, document.body.firstChild);
-    
-    // 10秒後に自動で消す
-    setTimeout(() => {
-      if (warningDiv.parentElement) {
-        warningDiv.remove();
-      }
-    }, 10000);
-  }
-
   /**
    * UIイベントリスナーを設定
    */
@@ -352,8 +84,6 @@ class WhereShotApp {
     // モーダル関連
     this.setupModalListeners();
 
-    // キーボードショートカット
-    this.setupKeyboardShortcuts();
   }
 
   /**
@@ -451,6 +181,14 @@ class WhereShotApp {
       window.WhereShotMapController.switchLayer(e.target.value);
     });
 
+    // SHA-256とレポートのコピー
+    document.getElementById('copy-sha256-btn').addEventListener('click', () => {
+      if (this.sha256) this.copyText(this.sha256);
+    });
+    document.getElementById('copy-report-btn').addEventListener('click', () => {
+      this.copyText(document.getElementById('report-preview').textContent);
+    });
+
     // プレビュー表示切り替えボタン
     const togglePreviewBtn = document.getElementById('toggle-preview-btn');
     togglePreviewBtn?.addEventListener('click', () => {
@@ -468,53 +206,51 @@ class WhereShotApp {
    * 地図関連のイベントリスナーを設定
    */
   setupMapListeners() {
-    // カスタム地図イベント
     document.addEventListener('whereshot:locationChanged', (e) => {
       this.onLocationChanged(e.detail);
     });
-
     document.addEventListener('whereshot:directionChanged', (e) => {
       this.onDirectionChanged(e.detail);
     });
 
-    // 地図初期化完了イベント
-    document.addEventListener('whereshot:mapInitialized', (e) => {
-      console.log('[WhereShot] Map initialization event received');
+    // 旧インラインスクリプトの初期化状態管理をここに集約
+    document.addEventListener('whereshot:mapInitialized', () => {
       this.mapInitialized = true;
-      
-      // 地図が初期化された後にサイズを再計算
-      setTimeout(() => {
-        window.WhereShotMapController.safeInvalidateSize();
-      }, 200);
+      const container = document.getElementById('map');
+      container.classList.remove('map-initializing', 'map-error');
+      container.classList.add('map-ready');
+      document.getElementById('map-coordinates').textContent = '位置指定または方向設定を選んで操作できます';
     });
-
-    // 地図初期化失敗イベント
-    document.addEventListener('whereshot:mapInitializationFailed', (e) => {
-      console.error('[WhereShot] Map initialization failed event received:', e.detail);
+    document.addEventListener('whereshot:mapInitializationFailed', () => {
       this.mapInitialized = false;
-      window.WhereShotUtils.UIUtils.showError('地図の初期化に失敗しました');
+      const container = document.getElementById('map');
+      container.classList.remove('map-initializing');
+      container.classList.add('map-error');
+      document.getElementById('map-coordinates').textContent = '地図の読み込みに失敗しました';
     });
   }
-
   /**
-   * 太陽計算関連のイベントリスナーを設定
+   * 解析日時とUTCオフセットの変更を反映
    */
   setupSunCalculationListeners() {
-    const analysisDate = document.getElementById('analysis-date');
-
-    // 日時変更時の自動計算
-    analysisDate?.addEventListener('change', () => {
-      if (this.hasValidLocation()) {
-        this.calculateSunPosition();
-      }
+    document.getElementById('analysis-date').addEventListener('change', () => {
+      this.dateWasEdited = true;
+      this.refreshAnalysis();
+    });
+    document.getElementById('utc-offset').addEventListener('change', (e) => {
+      this.offsetDecision = {
+        offsetMin: Number(e.target.value), source: 'manual', residualSec: null, conflict: false,
+      };
+      this.updateEstimation();
+      this.updateExifDisplay(this.currentExifData || WhereShotLogic.normalizeTags({}));
+      this.refreshAnalysis();
     });
   }
-
   /**
    * モーダル関連のイベントリスナーを設定
    */
   setupModalListeners() {
-    const helpModal = document.getElementById('help-modal');
+    const helpModal = document.getElementById('help-dialog');
     const modalClose = helpModal?.querySelector('.modal-close');
 
     // モーダルクローズ
@@ -531,767 +267,438 @@ class WhereShotApp {
   }
 
   /**
-   * キーボードショートカットを設定
-   */
-  setupKeyboardShortcuts() {
-    document.addEventListener('keydown', (e) => {
-      // Escapeキーでモーダルを閉じる
-      if (e.key === 'Escape') {
-        this.hideHelpModal();
-      }
-
-      // Ctrl+R でリセット
-      if (e.ctrlKey && e.key === 'r') {
-        e.preventDefault();
-        this.resetApplication();
-      }
-
-      // F1でヘルプ
-      if (e.key === 'F1') {
-        e.preventDefault();
-        this.showHelpModal();
-      }
-    });
-  }
-
-  /**
-   * セキュリティ設定
-   */
-  setupSecurity() {
-    // CSPヘッダーの確認（開発用）
-    if (document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
-      console.log('[WhereShot] CSP header detected');
-    }
-
-    // セキュアなランダム値生成の確認
-    if (window.crypto && window.crypto.getRandomValues) {
-      console.log('[WhereShot] Secure random generation available');
-    }
-  }
-
-  /**
    * 外部リンクの初期設定
    */
   initializeExternalLinks() {
-    // 各外部リンクにデフォルトのtarget="_blank"とrel属性を設定
-    const externalLinks = [
-      'nasa-worldview-link',
-      'weather-link',
-      'gsi-map-link',
-      'gsi-photo-link',
-      'streetview-link',
-      'reverse-image-link',
-    ];
-
-    externalLinks.forEach((linkId) => {
-      const link = document.getElementById(linkId);
-      if (link) {
-        // デフォルトのhrefを確認（#の場合は無効化）
-        if (link.href === '#' || link.href.endsWith('#')) {
-          link.style.opacity = '0.5';
-          link.style.cursor = 'not-allowed';
-          link.onclick = (e) => {
-            e.preventDefault();
-            window.WhereShotUtils.UIUtils.showError(
-              '画像を読み込んでから外部リンクをご利用ください'
-            );
-          };
+    for (const link of document.querySelectorAll('.external-links a, #suncalc-link')) {
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.addEventListener('click', (event) => {
+        if (link.getAttribute('aria-disabled') === 'true') {
+          event.preventDefault();
+          window.WhereShotUtils.UIUtils.showError('位置と解析日時を設定してからリンクをご利用ください');
         }
-
-        // セキュリティ属性を確実に設定
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-      }
-    });
-
-    // 気象庁リンクのデフォルト設定
-    const weatherLink = document.getElementById('weather-link');
-    if (weatherLink) {
-      weatherLink.href = 'https://ds.data.jma.go.jp/obd/stats/etrn/index.php';
-      weatherLink.title = '気象庁 過去の気象データ・ダウンロード';
+      });
     }
-
-    // 類似画像検索のデフォルト設定
-    const reverseImageLink = document.getElementById('reverse-image-link');
-    if (reverseImageLink) {
-      reverseImageLink.href = 'https://images.google.com/';
-      reverseImageLink.title = 'Google画像検索';
-    }
-
-    console.log('[WhereShot] External links initialized');
+    this.updateExternalLinks();
   }
 
+  /**
+   * 安全なリンクの有効・無効状態を同期
+   */
+  setExternalLink(id, url) {
+    const link = document.getElementById(id);
+    link.setAttribute('aria-disabled', String(!url));
+    link.classList.toggle('is-disabled', !url);
+    if (url) link.href = url;
+    else link.removeAttribute('href');
+  }
   /**
    * ファイル選択処理
    * @param {File} file - 選択されたファイル
    */
   async handleFileSelection(file) {
+    const generation = ++this.fileGeneration;
+    this.clearAnalysisData();
+    this.resetUI();
+    window.WhereShotUtils.UIUtils.showLoading('drop-zone', true);
     try {
-      window.WhereShotUtils.UIUtils.showLoading('drop-zone', true);
-
       // ファイル検証
       const validation = window.WhereShotUtils.FileUtils.validateFile(file);
       if (!validation.isValid) {
-        throw new Error(validation.errors.join(', '));
+        window.WhereShotUtils.UIUtils.showError(validation.errors.join('、'));
+        return;
       }
 
       this.currentFile = file;
-
-      // 地図をリセット（前の画像のマーカー等をクリア）
-      if (this.mapInitialized && window.WhereShotMapController) {
-        window.WhereShotMapController.resetMap();
-      }
-
-      // ファイル情報を表示
       this.displayFileInfo(file);
-
-      // ドロップゾーンの状態を更新
       this.updateDropZoneState(true);
-
-      // プレビューエリアを表示
       this.showImagePreview();
 
-      // Exif情報を抽出
+      // 同期のExifReader例外もextractExifData内で受け止める
       const exifData = await window.WhereShotExifParser.extractExifData(file);
+      if (generation !== this.fileGeneration) return;
       this.currentExifData = exifData;
-
-      // 日時推定を実行
-      const estimationResult =
-        window.WhereShotDateTimeEstimator.estimateDateTime(exifData, file);
-      this.currentEstimationResult = estimationResult;
-
-      // UI更新
+      this.chooseOffset(exifData);
+      this.updateEstimation();
       this.updateExifDisplay(exifData);
-      this.updateDateTimeEstimationDisplay(estimationResult);
-      this.showAnalysisResults();
+      await this.calculateFileHash(file, generation);
+      if (generation !== this.fileGeneration) return;
+      await this.showAnalysisResults();
+      if (generation !== this.fileGeneration) return;
 
-      // GPS情報があれば地図に表示
-      if (exifData.gps.latitude && exifData.gps.longitude) {
+      // 0度の緯度・経度も有効
+      if (WhereShotLogic.isValidLatLng(exifData.latitude, exifData.longitude)) {
+        this.locationSource = 'exif';
         this.displayLocationOnMap(exifData);
+      } else {
+        window.WhereShotMapController.toggleManualLocationMode(true);
       }
 
-      // 推定日時があれば自動入力
-      if (estimationResult.estimated) {
-        this.setAnalysisDateTime(estimationResult.estimated);
+      if (this.currentEstimationResult.estimatedUtcMs !== null) {
+        this.setAnalysisDateTime(WhereShotLogic.utcMsToWall(
+          this.currentEstimationResult.estimatedUtcMs, this.offsetDecision.offsetMin
+        ));
       }
-
-      // 外部リンクを更新
-      this.updateExternalLinks(exifData);
-
-      window.WhereShotUtils.UIUtils.showSuccess('ファイルの解析が完了しました');
-    } catch (error) {
-      console.error('[WhereShot] File processing error:', error);
-      window.WhereShotUtils.UIUtils.showError(
-        `ファイル処理エラー: ${error.message}`
-      );
+      this.refreshAnalysis();
+      if (window.WhereShotExifParser.readFailed) {
+        window.WhereShotUtils.UIUtils.showError('この形式または内容からはExifを読み取れませんでした');
+      } else {
+        window.WhereShotUtils.UIUtils.showSuccess('ファイルの解析が完了しました');
+      }
+    } catch {
+      console.error('ファイルを解析できませんでした');
+      window.WhereShotUtils.UIUtils.showError('ファイルを解析できませんでした。形式や内容を確認してください');
     } finally {
-      window.WhereShotUtils.UIUtils.showLoading('drop-zone', false);
+      if (generation === this.fileGeneration) {
+        window.WhereShotUtils.UIUtils.showLoading('drop-zone', false);
+      }
     }
   }
 
   /**
+   * 撮影時点のブラウザー側オフセットはDOM側だけで取得する
+   */
+  chooseOffset(exif) {
+    const logic = WhereShotLogic;
+    const filename = logic.extractDatesFromFilename(this.currentFile.name, Date.now());
+    const wall = logic.parseExifDateTime(exif.dateTimeOriginal)
+      || logic.parseExifDateTime(exif.dateTimeDigitized)
+      || logic.parseExifDateTime(exif.dateTime)
+      || filename.find((source) => source.wall)?.wall;
+    const browserDate = wall
+      ? new Date(wall.year, wall.month - 1, wall.day, wall.hour, wall.minute, wall.second)
+      : new Date(this.currentFile.lastModified);
+    this.offsetDecision = logic.decideOffset({
+      exifOffset: exif.offsetTimeOriginal, wall, gpsUtcMs: exif.gpsUtcMs,
+      browserOffsetMin: -browserDate.getTimezoneOffset(),
+    });
+    const select = document.getElementById('utc-offset');
+    const value = String(this.offsetDecision.offsetMin);
+    // Exifに候補外の有効な分単位オフセットがある場合も、値を黙って変えない。
+    select.querySelectorAll('[data-custom]').forEach((option) => option.remove());
+    if (!Array.from(select.options).some((option) => option.value === value)) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.dataset.custom = 'true';
+      option.textContent = 'UTC' + logic.formatOffset(this.offsetDecision.offsetMin);
+      select.append(option);
+    }
+    select.value = value;
+  }
+
+  /**
+   * ファイルのバイト列をSHA-256にする。内容を保存・送信しない。
+   */
+  async calculateFileHash(file, generation) {
+    let hash = null;
+    try {
+      if (globalThis.crypto?.subtle) {
+        const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+        hash = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('');
+      }
+    } catch {
+      // セキュアコンテキスト以外などでも解析は続ける。
+    }
+    if (generation !== this.fileGeneration) return;
+    this.sha256 = hash;
+    document.getElementById('file-sha256').textContent = hash || 'この開き方では計算できません';
+    document.getElementById('copy-sha256-btn').disabled = !hash;
+  }
+
+  /**
+   * 選択中のオフセットで全ソースを再評価
+   */
+  updateEstimation() {
+    if (!this.currentFile || !this.currentExifData) return;
+    this.currentEstimationResult = WhereShotLogic.estimateDateTime({
+      exif: this.currentExifData, fileName: this.currentFile.name,
+      lastModifiedMs: this.currentFile.lastModified,
+      offsetMin: this.offsetDecision.offsetMin, nowMs: Date.now(),
+    });
+    this.updateDateTimeEstimationDisplay(this.currentEstimationResult);
+  }
+  /**
    * Exif表示を更新
-   * @param {object} exifData - Exif情報
+   * @param {object} exifData - 正規化済みExif情報
    */
   updateExifDisplay(exifData) {
-    // 撮影日時
-    const datetimeInfo = document.getElementById('datetime-info');
-    if (datetimeInfo) {
-      if (exifData.dateTime.original) {
-        const formattedDate = window.WhereShotUtils.SecurityUtils.escapeHtml(
-          exifData.dateTime.formatted.original || '不明'
-        );
-        const timezone = exifData.dateTime.timezone
-          ? window.WhereShotUtils.SecurityUtils.escapeHtml(
-              exifData.dateTime.timezone
-            )
-          : '';
-
-        datetimeInfo.innerHTML = `
-                    <strong>撮影日時:</strong> ${formattedDate}<br>
-                    ${
-                      timezone
-                        ? `<strong>タイムゾーン:</strong> ${timezone}`
-                        : ''
-                    }
-                `;
-      } else {
-        datetimeInfo.innerHTML = `
-                    <p style="color: var(--text-muted);">日時情報なし</p>
-                `;
-      }
-    }
+    const logic = WhereShotLogic;
+    const wall = logic.parseExifDateTime(exifData.dateTimeOriginal);
+    document.getElementById('datetime-info').textContent = wall
+      ? logic.formatWall(wall, this.offsetDecision.offsetMin).replace('（', '\n（') : '日時情報なし';
 
     // GPS情報
     const gpsInfo = document.getElementById('gps-info');
-    if (gpsInfo) {
-      if (exifData.gps.latitude && exifData.gps.longitude) {
-        const coordinates = window.WhereShotUtils.SecurityUtils.escapeHtml(
-          exifData.gps.formatted.coordinates
-        );
-        const altitude = exifData.gps.altitude
-          ? window.WhereShotUtils.SecurityUtils.escapeHtml(
-              exifData.gps.formatted.altitude
-            )
-          : '';
-
-        gpsInfo.innerHTML = `
-                    <div class="gps-status-badge gps-available">✓ GPS有り</div>
-                    <strong>座標:</strong><br>${coordinates}<br>
-                    ${altitude ? `<strong>高度:</strong> ${altitude}` : ''}
-                `;
-      } else {
-        gpsInfo.innerHTML = `
-                    <div class="gps-status-badge gps-unavailable">✕ GPS無し</div>
-                    <p style="margin-top: 0.5rem; color: var(--text-muted);">位置情報が記録されていません</p>
-                `;
-      }
+    gpsInfo.replaceChildren();
+    const badge = document.createElement('div');
+    const hasGPS = logic.isValidLatLng(exifData.latitude, exifData.longitude);
+    badge.className = 'gps-status-badge ' + (hasGPS ? 'gps-available' : 'gps-unavailable');
+    badge.textContent = hasGPS ? '✓ GPS有り' : '✕ GPS無し';
+    gpsInfo.append(badge);
+    const coordinates = document.createElement('p');
+    coordinates.textContent = hasGPS
+      ? logic.decimalToDms(exifData.latitude, true) + ', ' + logic.decimalToDms(exifData.longitude, false)
+        + '\n(' + exifData.latitude.toFixed(6) + ', ' + exifData.longitude.toFixed(6) + ')'
+      : '位置情報が記録されていません';
+    gpsInfo.append(coordinates);
+    if (hasGPS && Number.isFinite(exifData.altitude)) {
+      const altitude = document.createElement('p');
+      altitude.textContent = '高度: ' + exifData.altitude.toFixed(1) + 'm';
+      gpsInfo.append(altitude);
     }
 
-    // カメラ情報（文字化け対策済み）
-    const cameraInfo = document.getElementById('camera-info');
-    if (cameraInfo) {
-      const cameraText = exifData.camera.formatted.camera || '不明';
-      cameraInfo.textContent =
-        window.WhereShotUtils.SecurityUtils.escapeHtml(cameraText);
-    }
+    // カメラ情報（外部由来の文字列はそのままテキストとして表示）
+    const camera = [logic.formatCamera(exifData.make, exifData.model)];
+    if (exifData.lensModel) camera.push('レンズ: ' + exifData.lensModel);
+    if (exifData.software) camera.push('ソフトウェア: ' + exifData.software);
+    document.getElementById('camera-info').textContent = camera.join('\n');
 
     // 撮影設定
-    const settingsInfo = document.getElementById('settings-info');
-    if (settingsInfo) {
-      const settings = [];
-      if (exifData.settings.formatted.iso)
-        settings.push(exifData.settings.formatted.iso);
-      if (exifData.settings.formatted.aperture)
-        settings.push(exifData.settings.formatted.aperture);
-      if (exifData.settings.formatted.shutter)
-        settings.push(exifData.settings.formatted.shutter);
-      if (exifData.settings.formatted.focalLength)
-        settings.push(exifData.settings.formatted.focalLength);
-
-      const settingsText =
-        settings.length > 0 ? settings.join(', ') : '設定情報なし';
-      settingsInfo.textContent =
-        window.WhereShotUtils.SecurityUtils.escapeHtml(settingsText);
-    }
+    const settings = [];
+    if (exifData.iso !== null) settings.push('ISO ' + exifData.iso);
+    if (exifData.fNumber !== null) settings.push('f/' + exifData.fNumber);
+    const exposure = logic.formatExposure(exifData.exposureTime);
+    if (exposure) settings.push(exposure);
+    if (exifData.focalLength !== null) settings.push(exifData.focalLength + 'mm');
+    document.getElementById('settings-info').textContent = settings.join(', ') || '設定情報なし';
+    this.updateDirectionDisplay();
   }
-
   /**
    * 日時推定結果を表示
-   * @param {object} estimationResult - 推定結果
+   * @param {object} result - 推定結果
    */
-  updateDateTimeEstimationDisplay(estimationResult) {
-    // 推定日時値
-    const estimatedValueElement = document.getElementById(
-      'estimated-datetime-value'
-    );
-    if (estimatedValueElement) {
-      if (estimationResult.estimated) {
-        estimatedValueElement.textContent =
-          estimationResult.formatted.estimated;
-        estimatedValueElement.style.color = 'var(--text-primary)';
-      } else {
-        estimatedValueElement.textContent = '推定できませんでした';
-        estimatedValueElement.style.color = 'var(--text-muted)';
-      }
+  updateDateTimeEstimationDisplay(result) {
+    const logic = WhereShotLogic;
+    const value = document.getElementById('estimated-datetime-value');
+    value.textContent = result.best
+      ? logic.formatWall(logic.utcMsToWall(result.estimatedUtcMs, this.offsetDecision.offsetMin), this.offsetDecision.offsetMin)
+        + '\n' + logic.formatUtc(result.estimatedUtcMs)
+      : '推定できませんでした';
+    const confidence = document.getElementById('estimation-confidence');
+    const percent = Math.round(result.confidence * 100);
+    confidence.textContent = '整合度: ' + percent + '%';
+    confidence.className = 'estimation-confidence ' + (percent >= 80 ? 'high' : percent >= 60 ? 'medium' : 'low');
+    document.getElementById('set-estimated-datetime-btn').hidden = !result.best;
+
+    const warnings = result.conflicts.map((conflict) => ({
+      severity: 'warning',
+      message: logic.SOURCE_LABEL[conflict.a] + 'と' + logic.SOURCE_LABEL[conflict.b] + 'の日時が食い違っています',
+    }));
+    for (const note of result.notes) {
+      warnings.push({
+        severity: 'info',
+        message: logic.SOURCE_LABEL[note.type] + 'が推定日時と異なります。撮影後に保存・編集・コピーされた可能性があります',
+      });
     }
-
-    // 信頼度
-    const confidenceElement = document.getElementById('estimation-confidence');
-    if (confidenceElement) {
-      const confidencePercent = Math.round(estimationResult.confidence * 100);
-      let confidenceLevel = 'low';
-
-      if (confidencePercent >= 80) {
-        confidenceLevel = 'high';
-      } else if (confidencePercent >= 60) {
-        confidenceLevel = 'medium';
-      }
-
-      confidenceElement.textContent = `信頼度: ${confidencePercent}%`;
-      confidenceElement.className = `estimation-confidence ${confidenceLevel}`;
-    }
-
-    // 推定日時セットボタンの表示制御
-    const setButton = document.getElementById('set-estimated-datetime-btn');
-    if (setButton) {
-      setButton.style.display = estimationResult.estimated
-        ? 'inline-flex'
-        : 'none';
-    }
-
-    // 警告メッセージ
-    this.displayEstimationWarnings(estimationResult.warnings);
-
-    // ソースリスト
-    this.displayDateTimeSources(estimationResult.formatted.sources);
+    if (!result.best) warnings.push({ severity: 'warning', message: '日時情報が見つかりません' });
+    this.displayEstimationWarnings(warnings);
+    this.displayDateTimeSources(result.sources);
   }
-
   /**
    * 推定警告を表示
    * @param {Array} warnings - 警告配列
    */
   displayEstimationWarnings(warnings) {
-    const warningsContainer = document.getElementById('estimation-warnings');
-    if (!warningsContainer) return;
-
-    if (warnings.length === 0) {
-      warningsContainer.style.display = 'none';
-      return;
+    const container = document.getElementById('estimation-warnings');
+    container.replaceChildren();
+    container.hidden = warnings.length === 0;
+    for (const warning of warnings) {
+      const item = document.createElement('div');
+      item.className = 'warning-item ' + warning.severity;
+      item.textContent = warning.message;
+      container.append(item);
     }
-
-    warningsContainer.style.display = 'block';
-    warningsContainer.innerHTML = warnings
-      .map((warning) => {
-        const iconMap = {
-          error: '❌',
-          warning: '⚠️',
-          info: 'ℹ️',
-        };
-
-        return `
-                <div class="warning-item ${warning.severity}">
-                    <span class="warning-icon">${
-                      iconMap[warning.severity]
-                    }</span>
-                    <span class="warning-message">${window.WhereShotUtils.SecurityUtils.escapeHtml(
-                      warning.message
-                    )}</span>
-                </div>
-            `;
-      })
-      .join('');
   }
-
   /**
-   * 日時ソースを表示
+   * 日時ソースを選択中のオフセットで表示
    * @param {Array} sources - ソース配列
    */
   displayDateTimeSources(sources) {
-    const sourcesContainer = document.getElementById('datetime-sources');
-    if (!sourcesContainer) return;
-
-    if (sources.length === 0) {
-      sourcesContainer.innerHTML =
-        '<div class="source-item"><span class="source-type">日時情報が見つかりませんでした</span></div>';
+    const container = document.getElementById('datetime-sources');
+    container.replaceChildren();
+    if (!sources.length) {
+      container.textContent = '日時情報が見つかりませんでした';
       return;
     }
-
-    sourcesContainer.innerHTML = sources
-      .map((source) => {
-        let reliabilityClass = 'low';
-        const reliability = parseInt(source.reliability);
-
-        if (reliability >= 80) {
-          reliabilityClass = 'high';
-        } else if (reliability >= 60) {
-          reliabilityClass = 'medium';
-        }
-
-        return `
-                <div class="source-item">
-                    <span class="source-type">${window.WhereShotUtils.SecurityUtils.escapeHtml(
-                      source.description
-                    )}</span>
-                    <span class="source-datetime">${window.WhereShotUtils.SecurityUtils.escapeHtml(
-                      source.date
-                    )}</span>
-                    <span class="source-reliability ${reliabilityClass}">${
-          source.reliability
-        }</span>
-                </div>
-            `;
-      })
-      .join('');
+    for (const source of sources) {
+      const item = document.createElement('div');
+      item.className = 'source-item';
+      const label = document.createElement('span');
+      label.className = 'source-type';
+      label.textContent = source.label + (source.hasTime ? '' : '（日付のみ・時刻は正午）');
+      const date = document.createElement('span');
+      date.className = 'source-datetime';
+      date.textContent = WhereShotLogic.formatWall(
+        WhereShotLogic.utcMsToWall(source.utcMs, this.offsetDecision.offsetMin), this.offsetDecision.offsetMin
+      );
+      if (source.type === 'gps_utc' || ['pxl-utc', 'unix-ms', 'unix-s'].includes(source.pattern)) {
+        date.textContent += '［UTCで記録］';
+      }
+      const reliability = document.createElement('span');
+      reliability.className = 'source-reliability';
+      reliability.textContent = Math.round(source.reliability * 100) + '%';
+      item.append(label, date, reliability);
+      container.append(item);
+    }
   }
-
   /**
    * 推定日時を解析日時にセット
    */
   setEstimatedDateTime() {
-    if (
-      !this.currentEstimationResult ||
-      !this.currentEstimationResult.estimated
-    ) {
-      window.WhereShotUtils.UIUtils.showError('推定日時がありません');
-      return;
-    }
-
-    try {
-      this.setAnalysisDateTime(this.currentEstimationResult.estimated);
-      window.WhereShotUtils.UIUtils.showSuccess(
-        '推定日時を解析日時にセットしました'
-      );
-
-      // 太陽位置の自動計算
-      if (this.hasValidLocation()) {
-        setTimeout(() => {
-          this.calculateSunPosition();
-        }, 500);
-      }
-    } catch (error) {
-      console.error('[WhereShot] Set estimated datetime error:', error);
-      window.WhereShotUtils.UIUtils.showError('推定日時のセットに失敗しました');
-    }
+    if (!this.currentEstimationResult?.best) return;
+    this.dateWasEdited = false;
+    this.setAnalysisDateTime(WhereShotLogic.utcMsToWall(
+      this.currentEstimationResult.estimatedUtcMs, this.offsetDecision.offsetMin
+    ));
+    this.refreshAnalysis();
+    window.WhereShotUtils.UIUtils.showSuccess('推定日時を解析日時にセットしました');
   }
-
   /**
-   * 解析結果を表示
+   * 解析結果を表示したあとに地図を初期化
    */
   async showAnalysisResults() {
-    const resultsDiv = document.getElementById('analysis-results');
-    if (resultsDiv) {
-      resultsDiv.style.display = 'block';
-      resultsDiv.classList.add('visible');
-
-      // 地図のサイズを安全に再計算（地図が初期化されてから）
-      if (this.mapInitialized) {
-        // 段階的に複数回実行
-        const delays = [200, 500, 1000];
-        delays.forEach(delay => {
-          setTimeout(() => {
-            window.WhereShotMapController.safeInvalidateSize();
-          }, delay);
-        });
-      } else {
-        // 地図がまだ初期化されていない場合は、初期化完了を待つ
-        this.waitForMapAndResize();
-      }
-
-      // スムーズスクロール
-      setTimeout(() => {
-        resultsDiv.scrollIntoView({ behavior: 'smooth' });
-      }, 300);
-    }
-  }
-
-  /**
-   * 地図の初期化を待ってサイズを再計算
-   */
-  async waitForMapAndResize() {
-    try {
-      // 地図の初期化完了を待機（最大15秒）
-      const maxWait = 15000;
-      const checkInterval = 500;
-      let waitTime = 0;
-
-      while (!this.mapInitialized && waitTime < maxWait) {
-        await new Promise(resolve => setTimeout(resolve, checkInterval));
-        waitTime += checkInterval;
-        
-        if (waitTime % 2000 === 0) {
-          console.log(`[WhereShot] Still waiting for map initialization... (${waitTime/1000}s)`);
-        }
-      }
-
-      if (this.mapInitialized) {
-        // 段階的にサイズ再計算
-        const delays = [200, 500, 1000];
-        delays.forEach(delay => {
-          setTimeout(() => {
-            window.WhereShotMapController.safeInvalidateSize();
-          }, delay);
-        });
-      } else {
-        console.warn('[WhereShot] Map initialization timeout');
-      }
-    } catch (error) {
-      console.error('[WhereShot] Error waiting for map:', error);
-    }
-  }
-
-  /**
-   * 地図に位置を表示
-   * @param {object} exifData - Exif情報
-   */
-  async displayLocationOnMap(exifData) {
-    const lat = exifData.gps.latitude;
-    const lng = exifData.gps.longitude;
-
-    // 地図が初期化されるまで待機
-    if (!this.mapInitialized) {
-      console.log('[WhereShot] Waiting for map initialization before setting location...');
-      await this.waitForMapInitialization();
-    }
-
-    if (this.mapInitialized) {
-      try {
-        window.WhereShotMapController.setLocation(lat, lng, {
-          type: 'photo',
-          accuracy: exifData.gps.accuracy,
-          dateTime: exifData.dateTime.original,
-          centerMap: true,
-          zoom: 15,
-        });
-
-        // GPS精度円を表示
-        if (exifData.gps.accuracy) {
-          window.WhereShotMapController.showAccuracyCircle(
-            lat,
-            lng,
-            exifData.gps.accuracy
-          );
-        }
-      } catch (error) {
-        console.error('[WhereShot] Error setting location on map:', error);
-        window.WhereShotUtils.UIUtils.showError('地図への位置表示に失敗しました');
-      }
-    }
-  }
-
-  /**
-   * 地図初期化の完了を待機
-   */
-  async waitForMapInitialization() {
-    const maxWait = 20000; // 20秒に延長
-    const checkInterval = 500;
-    let waitTime = 0;
-
-    while (!this.mapInitialized && waitTime < maxWait) {
-      await new Promise(resolve => setTimeout(resolve, checkInterval));
-      waitTime += checkInterval;
-      
-      if (waitTime % 3000 === 0) {
-        console.log(`[WhereShot] Still waiting for map initialization... (${waitTime/1000}s)`);
-      }
-    }
-
-    if (!this.mapInitialized) {
-      console.error('[WhereShot] Map initialization timeout after 20 seconds');
-      throw new Error('地図の初期化がタイムアウトしました');
-    }
-  }
-
-  /**
-   * 解析日時を設定
-   * @param {Date} dateTime - 日時
-   */
-  setAnalysisDateTime(dateTime) {
-    const analysisDate = document.getElementById('analysis-date');
-    if (analysisDate && dateTime) {
-      analysisDate.value =
-        window.WhereShotUtils.DateUtils.formatForInput(dateTime);
-    }
-  }
-
-  /**
-   * 外部リンクを更新
-   * @param {object} exifData - Exif情報
-   */
-  updateExternalLinks(exifData) {
-    const lat = exifData.gps.latitude;
-    const lng = exifData.gps.longitude;
-    const dateTime = this.currentEstimationResult?.estimated || exifData?.dateTime?.original || null;
-
-    console.log('[WhereShot] Updating external links:', { lat, lng, dateTime });
-
-    // すべての外部リンクを有効化
-    this.enableExternalLinks();
-
-    if (lat && lng) {
-      // NASA Worldview
-      const nasaLink = document.getElementById('nasa-worldview-link');
-      if (nasaLink) {
-        const nasaURL = window.WhereShotUtils.URLUtils.generateNASAWorldviewURL(
-          lat,
-          lng,
-          dateTime
-        );
-        nasaLink.href = nasaURL;
-        nasaLink.target = '_blank';
-        nasaLink.rel = 'noopener noreferrer';
-        console.log('[WhereShot] NASA Worldview URL:', nasaURL);
-      }
-
-      // 地理院地図
-      const gsiMapLink = document.getElementById('gsi-map-link');
-      if (gsiMapLink) {
-        const gsiURL = window.WhereShotUtils.URLUtils.generateGSIMapURL(
-          lat,
-          lng
-        );
-        gsiMapLink.href = gsiURL;
-        gsiMapLink.target = '_blank';
-        gsiMapLink.rel = 'noopener noreferrer';
-        console.log('[WhereShot] GSI Map URL:', gsiURL);
-      }
-
-      const gsiPhotoLink = document.getElementById('gsi-photo-link');
-      if (gsiPhotoLink) {
-        const gsiPhotoURL = window.WhereShotUtils.URLUtils.generateGSIPhotoURL(
-          lat,
-          lng
-        );
-        gsiPhotoLink.href = gsiPhotoURL;
-        gsiPhotoLink.target = '_blank';
-        gsiPhotoLink.rel = 'noopener noreferrer';
-        console.log('[WhereShot] GSI Photo URL:', gsiPhotoURL);
-      }
-
-      // Street View
-      const streetViewLink = document.getElementById('streetview-link');
-      if (streetViewLink) {
-        const streetViewURL =
-          window.WhereShotUtils.URLUtils.generateStreetViewURL(lat, lng);
-        streetViewLink.href = streetViewURL;
-        streetViewLink.target = '_blank';
-        streetViewLink.rel = 'noopener noreferrer';
-        console.log('[WhereShot] Street View URL:', streetViewURL);
-      }
-    }
-
-    // 気象情報（位置情報と日時の両方が必要）
-    const weatherLink = document.getElementById('weather-link');
-    if (weatherLink) {
-      const dateTime =
-        exifData?.dateTime?.original ||
-        this.currentEstimationResult?.estimated ||
-        null;
-
-      const weatherURL = window.WhereShotUtils.URLUtils.generateWeatherURL(
-        lat,
-        lng,
-        dateTime
-      );
-      weatherLink.href = weatherURL;
-      weatherLink.target = '_blank';
-      weatherLink.rel = 'noopener noreferrer';
-      console.log('[WhereShot] Weather URL:', weatherURL);
-
-      // 位置情報がない場合の処理
-      if (!lat || !lng) {
-        weatherLink.title =
-          '位置情報がないため、気象庁トップページにリンクします';
-      } else {
-        weatherLink.title = `撮影地点の過去の天気データにリンクします`;
-      }
-    }
-
-    // 類似画像検索
-    const reverseImageLink = document.getElementById('reverse-image-link');
-    if (reverseImageLink) {
-      const reverseImageURL =
-        window.WhereShotUtils.URLUtils.generateReverseImageURL();
-      reverseImageLink.href = reverseImageURL;
-      reverseImageLink.target = '_blank';
-      reverseImageLink.rel = 'noopener noreferrer';
-      console.log('[WhereShot] Reverse Image URL:', reverseImageURL);
-    }
-  }
-
-  /**
-   * 外部リンクを有効化
-   */
-  enableExternalLinks() {
-    const externalLinks = [
-      'nasa-worldview-link',
-      'weather-link',
-      'gsi-map-link',
-      'gsi-photo-link',
-      'streetview-link',
-      'reverse-image-link',
-    ];
-
-    externalLinks.forEach((linkId) => {
-      const link = document.getElementById(linkId);
-      if (link) {
-        link.style.opacity = '1';
-        link.style.cursor = 'pointer';
-        link.onclick = null; // イベントハンドラーを削除
-      }
+    const results = document.getElementById('analysis-results');
+    results.hidden = false;
+    await this.initializeMap();
+    // ファイル情報と解析の先頭へ移動する。
+    document.getElementById('image-preview').scrollIntoView({
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
     });
   }
+  /**
+   * 地図にExif位置・メートル単位の精度・撮影方位を表示
+   */
+  displayLocationOnMap(exif) {
+    const map = window.WhereShotMapController;
+    map.setLocation(exif.latitude, exif.longitude, {
+      type: 'photo', accuracy: exif.hPositioningError, centerMap: true, zoom: 15,
+    });
+    if (exif.hPositioningError !== null) {
+      map.showAccuracyCircle(exif.latitude, exif.longitude, exif.hPositioningError);
+    }
+    map.setExifDirection(exif.imgDirection);
+  }
+  /**
+   * 撮影地の壁時計を秒単位で設定
+   */
+  setAnalysisDateTime(wall) {
+    document.getElementById('analysis-date').value = WhereShotLogic.wallToInputValue(wall);
+  }
 
+  /**
+   * 太陽位置・外部リンク・レポートが共有する唯一の日時
+   */
+  getAnalysisTime() {
+    const wall = WhereShotLogic.inputValueToWall(document.getElementById('analysis-date').value);
+    const offsetMin = Number(document.getElementById('utc-offset').value);
+    return { wall, offsetMin, utcMs: WhereShotLogic.wallToUtcMs(wall, offsetMin) };
+  }
+
+  /**
+   * 解析日時・位置の変更をすべての出力に反映
+   */
+  refreshAnalysis() {
+    this.updateOffsetSource();
+    if (this.hasValidLocation() && this.getAnalysisTime().utcMs !== null) {
+      this.calculateSunPosition(false);
+    } else {
+      this.currentSunData = null;
+      this.updateSunDisplay(null);
+    }
+    this.updateExternalLinks();
+    this.updateReport();
+  }
+
+  /**
+   * UTCオフセットの根拠と警告を表示。経度の目安は適用しない。
+   */
+  updateOffsetSource() {
+    const d = this.offsetDecision;
+    if (!d) return;
+    const lines = [];
+    if (d.source === 'exif') lines.push('ExifのOffsetTimeOriginalから');
+    if (d.source === 'gps') {
+      lines.push('GPS時刻（UTC）との差から推定（残差 ' + String(d.residualSec).replace('-', '−') + ' 秒）');
+    }
+    if (d.source === 'browser') {
+      lines.push('このブラウザーのタイムゾーンを仮に使っています。撮影地が違う場合は選び直してください');
+      const location = window.WhereShotMapController.getCurrentLocation();
+      const hint = WhereShotLogic.longitudeOffsetHint(location?.longitude);
+      if (hint !== null && Math.abs(hint - d.offsetMin) >= 120) {
+        lines.push('撮影地の経度からの目安はUTC' + WhereShotLogic.formatOffset(hint)
+          + 'です（標準時・夏時間とは一致しないことがあります）。UTCオフセットを確認してください');
+      }
+    }
+    if (d.source === 'manual') lines.push('手動で指定');
+    if (d.conflict) lines.push('ExifのオフセットとGPS時刻からの推定が食い違っています');
+    const source = document.getElementById('utc-offset-source');
+    source.textContent = lines.join('\n');
+    source.classList.toggle('offset-warning', d.source === 'browser' || d.conflict);
+  }
+  /**
+   * 外部リンクを更新（解析日時＋UTCオフセットに統一）
+   */
+  updateExternalLinks() {
+    const logic = WhereShotLogic;
+    const location = window.WhereShotMapController.getCurrentLocation();
+    const lat = location?.latitude;
+    const lng = location?.longitude;
+    const { wall, utcMs } = this.getAnalysisTime();
+    this.setExternalLink('nasa-worldview-link', logic.nasaWorldviewUrl(lat, lng, wall));
+    this.setExternalLink('gsi-map-link', logic.gsiMapUrl(lat, lng, false));
+    this.setExternalLink('gsi-photo-link', logic.gsiMapUrl(lat, lng, true));
+    this.setExternalLink('streetview-link', logic.streetViewUrl(lat, lng, this.getCurrentDirection()));
+    this.setExternalLink('suncalc-link', logic.sunCalcOrgUrl(lat, lng, wall));
+    const weather = logic.jmaHourlyUrl(lat, lng, utcMs, window.WhereShotStations);
+    this.currentWeather = weather;
+    this.setExternalLink('weather-link', weather?.url || null);
+    document.getElementById('weather-link').textContent = weather?.station
+      ? '過去の天気（' + weather.station + '・約' + weather.distanceKm + 'km）' : '過去の天気';
+    document.getElementById('weather-note').textContent = location && !weather?.station
+      ? '200km以内に気象庁の観測所がありません（日本国外など）。日時も確認してください' : '';
+  }
   /**
    * 太陽位置を計算
    */
-  async calculateSunPosition() {
-    try {
-      // 地図が初期化されているかチェック
-      if (!this.mapInitialized) {
-        throw new Error('地図が初期化されていません');
-      }
-
-      const location = window.WhereShotMapController.getCurrentLocation();
-      const analysisDate = document.getElementById('analysis-date');
-
-      if (!location) {
-        throw new Error('位置情報が設定されていません');
-      }
-
-      if (!analysisDate.value) {
-        throw new Error('解析日時が設定されていません');
-      }
-
-      const dateTime = new Date(analysisDate.value);
-      if (isNaN(dateTime.getTime())) {
-        throw new Error('無効な日時です');
-      }
-
-      // 太陽位置を計算
-      const sunData = window.WhereShotSunCalculator.calculateSunPosition(
-        location.latitude,
-        location.longitude,
-        dateTime
-      );
-
-      this.currentSunData = sunData;
-
-      // 結果を表示
-      this.updateSunDisplay(sunData);
-
-      // SunCalc.orgリンクを更新
-      const sunCalcLink = document.getElementById('suncalc-link');
-      if (sunCalcLink) {
-        sunCalcLink.href = window.WhereShotSunCalculator.generateSunCalcURL(
-          location.latitude,
-          location.longitude,
-          dateTime
-        );
-      }
-
-      window.WhereShotUtils.UIUtils.showSuccess('太陽位置の計算が完了しました');
-    } catch (error) {
-      console.error('[WhereShot] Sun calculation error:', error);
-      window.WhereShotUtils.UIUtils.showError(
-        `太陽位置計算エラー: ${error.message}`
-      );
+  calculateSunPosition(notify = true) {
+    const location = window.WhereShotMapController.getCurrentLocation();
+    const { utcMs } = this.getAnalysisTime();
+    if (!this.hasValidLocation() || utcMs === null) {
+      this.currentSunData = null;
+      this.updateSunDisplay(null);
+      if (notify) window.WhereShotUtils.UIUtils.showError('撮影位置と解析日時を設定してください');
+      return;
     }
+    this.currentSunData = window.WhereShotSunCalculator.calculateSunPosition(
+      location.latitude, location.longitude, utcMs
+    );
+    this.updateSunDisplay(this.currentSunData);
+    this.updateExternalLinks();
+    this.updateReport();
+    if (notify) window.WhereShotUtils.UIUtils.showSuccess('太陽位置の計算が完了しました');
   }
-
   /**
-   * 太陽表示を更新
-   * @param {object} sunData - 太陽データ
+   * 太陽と影の表示を更新
    */
-  updateSunDisplay(sunData) {
-    // 太陽高度
-    const sunElevation = document.getElementById('sun-elevation');
-    if (sunElevation) {
-      sunElevation.textContent = sunData.formatted.elevation;
-    }
-
-    // 太陽方位
-    const sunAzimuth = document.getElementById('sun-azimuth');
-    if (sunAzimuth) {
-      sunAzimuth.textContent = sunData.formatted.azimuth;
-    }
-
-    // 時間帯
-    const sunPhase = document.getElementById('sun-phase');
-    if (sunPhase) {
-      sunPhase.textContent = sunData.formatted.phase;
-    }
+  updateSunDisplay(sun) {
+    const direction = (value) => value.toFixed(1) + '°（' + WhereShotLogic.toCardinalJa(value) + '）';
+    document.getElementById('sun-elevation').textContent = sun ? sun.altitudeDeg.toFixed(1) + '°' : '-';
+    document.getElementById('sun-azimuth').textContent = sun ? direction(sun.azimuthDeg) : '-';
+    document.getElementById('sun-phase').textContent = sun ? WhereShotLogic.PHASE_JA[sun.phase] : '-';
+    document.getElementById('shadow-direction').textContent = sun
+      ? (sun.shadowDirectionDeg === null ? '影なし' : direction(sun.shadowDirectionDeg)) : '-';
+    document.getElementById('shadow-length').textContent = sun
+      ? (sun.shadowRatio === null ? '影なし' : '高さの' + sun.shadowRatio.toFixed(2) + '倍') : '-';
   }
-
   /**
    * 手動位置指定モードを切り替え
    */
   toggleManualLocationMode() {
-    window.WhereShotUtils.UIUtils.showSuccess(
-      '地図をクリックして位置を指定してください'
-    );
+    const map = window.WhereShotMapController;
+    map.toggleManualLocationMode(!map.isManualLocationMode);
   }
-
   /**
    * 撮影方向設定モードを切り替え
    */
@@ -1301,111 +708,134 @@ class WhereShotApp {
   }
 
   /**
-   * 位置変更イベントハンドラ
-   * @param {object} location - 位置情報
+   * 位置変更イベントハンドラー
    */
-  onLocationChanged(location) {
-    console.log('[WhereShot] Location changed:', location);
+  onLocationChanged() {
+    this.locationSource = 'manual';
+    this.updateDirectionDisplay();
+    this.refreshAnalysis();
+  }
+  /**
+   * 方向変更イベントハンドラー
+   */
+  onDirectionChanged() {
+    this.updateDirectionDisplay();
+    this.updateExternalLinks();
+    this.updateReport();
+  }
 
-    // 太陽計算がある場合は再計算
-    if (this.currentSunData) {
-      this.calculateSunPosition();
+  /**
+   * 現在の方位は手動設定を優先し、なければExifの記録を使う
+   */
+  getCurrentDirection() {
+    const manual = window.WhereShotMapController.getCurrentDirection();
+    return Number.isFinite(manual) ? manual : (this.currentExifData?.imgDirection ?? null);
+  }
+
+  /**
+   * 撮影方位と真北・磁北の根拠を表示
+   */
+  updateDirectionDisplay() {
+    const direction = this.getCurrentDirection();
+    let text = '撮影方位: 記録なし';
+    if (Number.isFinite(direction)) {
+      const manual = window.WhereShotMapController.directionSource === 'manual';
+      const ref = this.currentExifData?.imgDirectionRef;
+      const reference = ref === 'M' ? '磁北基準' : (ref === 'T' ? '真北基準' : '基準不明');
+      text = '撮影方位: ' + direction.toFixed(1) + '°（' + WhereShotLogic.toCardinalJa(direction) + '）'
+        + (manual ? '［手動］' : '［Exif・' + reference + '］');
+    }
+    document.getElementById('direction-info').textContent = text;
+  }
+
+  /**
+   * 保存せず、確認できるプレーンテキストのレポートを作る
+   */
+  updateReport() {
+    const preview = document.getElementById('report-preview');
+    if (!this.currentFile) {
+      preview.textContent = '';
+      document.getElementById('copy-report-btn').disabled = true;
+      return;
+    }
+    const time = this.getAnalysisTime();
+    const location = window.WhereShotMapController.getCurrentLocation();
+    preview.textContent = WhereShotLogic.buildReport({
+      fileName: this.currentFile.name, fileSize: this.currentFile.size, fileType: this.currentFile.type,
+      sha256: this.sha256, wall: time.wall, offsetMin: time.offsetMin,
+      offsetSource: this.offsetDecision?.source, residualSec: this.offsetDecision?.residualSec,
+      dateSourceLabel: this.dateWasEdited ? '解析日時を手動指定' : this.currentEstimationResult?.best?.label,
+      confidence: this.currentEstimationResult?.confidence || 0,
+      latitude: location?.latitude, longitude: location?.longitude, locationSource: this.locationSource,
+      directionDeg: this.getCurrentDirection(), sun: this.currentSunData,
+      station: this.currentWeather?.station, stationKm: this.currentWeather?.distanceKm,
+      generatedAtUtcMs: Date.now(),
+    });
+    document.getElementById('copy-report-btn').disabled = false;
+  }
+
+  /**
+   * Clipboard APIが使えない場合にも操作を継続
+   */
+  async copyText(text) {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('コピー非対応');
+      await navigator.clipboard.writeText(text);
+      window.WhereShotUtils.UIUtils.showSuccess('コピーしました');
+    } catch {
+      window.WhereShotUtils.UIUtils.showError('コピーできませんでした。内容を選択してコピーしてください');
     }
   }
-
   /**
-   * 方向変更イベントハンドラ
-   * @param {object} direction - 方向情報
-   */
-  onDirectionChanged(direction) {
-    console.log('[WhereShot] Direction changed:', direction);
-  }
-
-  /**
-   * 有効な位置情報があるかチェック
-   * @returns {boolean} 有効性
+   * 0度を含む有効な位置情報があるかチェック
    */
   hasValidLocation() {
-    if (!this.mapInitialized) {
-      return false;
-    }
-    
     const location = window.WhereShotMapController.getCurrentLocation();
-    return location && location.latitude && location.longitude;
+    return WhereShotLogic.isValidLatLng(location?.latitude, location?.longitude);
   }
-
   /**
-   * ヘルプモーダルを表示
+   * ヘルプダイアログを表示
    */
   showHelpModal() {
-    const helpModal = document.getElementById('help-modal');
-    if (helpModal) {
-      helpModal.style.display = 'flex';
-    }
+    document.getElementById('help-dialog').showModal();
   }
-
   /**
-   * ヘルプモーダルを非表示
+   * ヘルプダイアログを閉じる
    */
   hideHelpModal() {
-    const helpModal = document.getElementById('help-modal');
-    if (helpModal) {
-      helpModal.style.display = 'none';
-    }
+    document.getElementById('help-dialog').close();
   }
-
-  /**
-   * ウェルカムメッセージを表示
-   */
-  showWelcomeMessage() {
-    console.log(
-      '%c🔍 WhereShot - 撮影時刻・場所解析ツール',
-      'font-size: 16px; font-weight: bold; color: #2563eb;'
-    );
-    console.log(
-      '%c📸 Created by IPUSIRON - セキュリティ重視のOSINTツール',
-      'color: #64748b;'
-    );
-    console.log('%c🔒 すべての処理はローカルで実行されます', 'color: #059669;');
-  }
-
   /**
    * アプリケーションをリセット
    */
   resetApplication() {
-    try {
-      // 確認ダイアログ
-      if (!confirm('すべてのデータをリセットしますか？')) {
-        return;
-      }
-
-      // データをクリア
-      this.currentFile = null;
-      this.currentExifData = null;
-      this.currentSunData = null;
-      this.currentEstimationResult = null;
-
-      // UIをリセット
-      this.resetUI();
-
-      // 地図をリセット
-      if (this.mapInitialized) {
-        window.WhereShotMapController.resetMap();
-      }
-
-      // パーサーデータをクリア
-      window.WhereShotExifParser.clearData();
-      window.WhereShotSunCalculator.clearData();
-
-      window.WhereShotUtils.UIUtils.showSuccess(
-        'アプリケーションがリセットされました'
-      );
-    } catch (error) {
-      console.error('[WhereShot] Reset error:', error);
-      window.WhereShotUtils.UIUtils.showError('リセットに失敗しました');
-    }
+    if (!confirm('すべてのデータをリセットしますか？')) return;
+    ++this.fileGeneration;
+    this.clearAnalysisData();
+    this.resetUI();
+    window.WhereShotUtils.UIUtils.showLoading('drop-zone', false);
+    window.WhereShotUtils.UIUtils.showSuccess('アプリケーションがリセットされました');
   }
 
+  /**
+   * 次の読み込みが失敗しても、前のファイルの情報を残さない
+   */
+  clearAnalysisData() {
+    this.hideImagePreview();
+    this.currentFile = null;
+    this.currentExifData = null;
+    this.currentSunData = null;
+    this.currentEstimationResult = null;
+    this.currentWeather = null;
+    this.offsetDecision = null;
+    this.locationSource = null;
+    this.sha256 = null;
+    this.dateWasEdited = false;
+    window.WhereShotMapController.resetMap();
+    window.WhereShotExifParser.clearData();
+    window.WhereShotSunCalculator.clearData();
+    document.getElementById('toast-region').replaceChildren();
+  }
   /**
    * UIをリセット
    */
@@ -1413,14 +843,13 @@ class WhereShotApp {
     // 解析結果を非表示
     const resultsDiv = document.getElementById('analysis-results');
     if (resultsDiv) {
-      resultsDiv.style.display = 'none';
-      resultsDiv.classList.remove('visible');
+      resultsDiv.hidden = true;
     }
 
     // プレビューエリアを非表示
     const previewDiv = document.getElementById('image-preview');
     if (previewDiv) {
-      previewDiv.style.display = 'none';
+      previewDiv.hidden = true;
     }
 
     // ドロップゾーンの状態をリセット
@@ -1435,6 +864,11 @@ class WhereShotApp {
       'sun-elevation',
       'sun-azimuth',
       'sun-phase',
+      'shadow-direction',
+      'shadow-length',
+      'direction-info',
+      'file-sha256',
+      'utc-offset-source',
     ];
 
     infoElements.forEach((id) => {
@@ -1460,18 +894,17 @@ class WhereShotApp {
 
     const setButton = document.getElementById('set-estimated-datetime-btn');
     if (setButton) {
-      setButton.style.display = 'none';
+      setButton.hidden = true;
     }
 
     const warningsContainer = document.getElementById('estimation-warnings');
     if (warningsContainer) {
-      warningsContainer.style.display = 'none';
+      warningsContainer.hidden = true;
     }
 
     const sourcesContainer = document.getElementById('datetime-sources');
     if (sourcesContainer) {
-      sourcesContainer.innerHTML =
-        '<div class="source-item"><span class="source-type">解析待機中...</span></div>';
+      sourcesContainer.textContent = '解析待機中...';
     }
 
     // 入力をクリア
@@ -1486,10 +919,14 @@ class WhereShotApp {
       fileInput.value = '';
     }
 
+    this.updateExternalLinks();
+    this.updateReport();
+    document.getElementById('copy-sha256-btn').disabled = true;
+
     // 地図座標表示をリセット
     const mapCoordinates = document.getElementById('map-coordinates');
     if (mapCoordinates) {
-      mapCoordinates.textContent = 'クリックして座標を取得';
+      mapCoordinates.textContent = '位置指定または方向設定を選んで操作できます';
     }
   }
 
@@ -1521,9 +958,7 @@ class WhereShotApp {
     const fileModifiedElement = document.getElementById('file-modified');
     if (fileModifiedElement) {
       fileModifiedElement.textContent =
-        window.WhereShotUtils.DateUtils.formatDateTime(
-          new Date(file.lastModified)
-        );
+        WhereShotLogic.formatUtc(file.lastModified);
     }
   }
 
@@ -1533,7 +968,7 @@ class WhereShotApp {
   showImagePreview() {
     const previewDiv = document.getElementById('image-preview');
     if (previewDiv) {
-      previewDiv.style.display = 'block';
+      previewDiv.hidden = false;
     }
   }
 
@@ -1541,35 +976,42 @@ class WhereShotApp {
    * 画像プレビューの表示切り替え
    */
   toggleImagePreview() {
-    const imageDisplay = document.getElementById('image-display');
-    const toggleBtn = document.getElementById('toggle-preview-btn');
-    const previewImg = document.getElementById('preview-img');
-
     if (!this.currentFile) return;
-
-    if (imageDisplay.style.display === 'none' || !imageDisplay.style.display) {
-      // プレビューを表示
-      if (this.currentFile.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          previewImg.src = e.target.result;
-          imageDisplay.style.display = 'block';
-          toggleBtn.textContent = '🙈 プレビュー非表示';
-        };
-        reader.readAsDataURL(this.currentFile);
-      } else {
-        window.WhereShotUtils.UIUtils.showError(
-          '画像ファイルではないため、プレビューできません'
-        );
-      }
-    } else {
-      // プレビューを非表示
-      imageDisplay.style.display = 'none';
-      previewImg.src = '';
-      toggleBtn.textContent = '🔍 プレビュー表示';
+    const display = document.getElementById('image-display');
+    if (!display.hidden) {
+      this.hideImagePreview();
+      return;
     }
+    const img = document.getElementById('preview-img');
+    const message = document.getElementById('preview-message');
+    this.previewUrl = URL.createObjectURL(this.currentFile);
+    img.hidden = false;
+    message.textContent = '';
+    img.onerror = () => {
+      img.hidden = true;
+      img.removeAttribute('src');
+      message.textContent = 'この形式はプレビューできません';
+      if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+      this.previewUrl = null;
+    };
+    img.src = this.previewUrl;
+    display.hidden = false;
+    document.getElementById('toggle-preview-btn').textContent = '🙈 プレビュー非表示';
   }
 
+  /**
+   * プレビューのURLを解放
+   */
+  hideImagePreview() {
+    const img = document.getElementById('preview-img');
+    img.onerror = null;
+    img.removeAttribute('src');
+    if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+    this.previewUrl = null;
+    document.getElementById('image-display').hidden = true;
+    document.getElementById('preview-message').textContent = '';
+    document.getElementById('toggle-preview-btn').textContent = '🔍 プレビュー表示';
+  }
   /**
    * ファイルを変更
    */
@@ -1581,42 +1023,14 @@ class WhereShotApp {
   }
 
   /**
-   * ドロップゾーンの状態を更新
-   * @param {boolean} uploaded - アップロード済みかどうか
+   * ボタンのノードを保持したままドロップゾーンを更新
    */
   updateDropZoneState(uploaded) {
     const dropZone = document.getElementById('drop-zone');
-    const dropZoneContent = dropZone?.querySelector('.drop-zone-content');
-
-    if (!dropZone || !dropZoneContent) return;
-
-    if (uploaded && this.currentFile) {
-      dropZone.classList.add('uploaded');
-      dropZoneContent.innerHTML = `
-                <div class="upload-icon">✅</div>
-                <div>
-                    <h3>ファイル読み込み完了</h3>
-                    <p>${this.currentFile.name}</p>
-                    <small>別のファイルをドロップするか、下のボタンで変更できます</small>
-                </div>
-            `;
-    } else {
-      dropZone.classList.remove('uploaded');
-      dropZoneContent.innerHTML = `
-                <div class="upload-icon">📸</div>
-                <h3>画像をドラッグ&ドロップ</h3>
-                <p>または <button id="file-select-btn" class="btn btn-primary">ファイルを選択</button></p>
-                <small>対応形式: JPEG, PNG, TIFF, MP4</small>
-            `;
-
-      // ボタンイベントを再設定
-      const fileSelectBtn = document.getElementById('file-select-btn');
-      const fileInput = document.getElementById('file-input');
-      fileSelectBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        fileInput.click();
-      });
-    }
+    dropZone.classList.toggle('uploaded', uploaded);
+    dropZone.querySelector('.upload-icon').textContent = uploaded ? '✅' : '📸';
+    document.getElementById('upload-title').textContent = uploaded ? 'ファイル読み込み完了' : '画像をドラッグ&ドロップ';
+    document.getElementById('upload-filename').textContent = uploaded ? this.currentFile.name : '';
   }
 }
 

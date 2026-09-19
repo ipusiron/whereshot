@@ -1,0 +1,5 @@
+{
+  "name": "whereshot",
+  "private": true,
+  "scripts": { "test": "node --test" }
+}

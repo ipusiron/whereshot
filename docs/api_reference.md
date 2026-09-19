@@ -31,16 +31,17 @@ WhereShotは、モジュラー設計により各機能を独立したクラス�
 │  ExifParser     │ ← Exif解析
 │  SunCalculator  │ ← 太陽位置計算
 │  MapController  │ ← 地図制御
-│  Utils          │ ← 共通ユーティリティ
+│  WhereShotLogic │ ← 純粋ロジック
+│  Utils          │ ← File・UIの補助
 └─────────────────┘
 ```
 
 ### 依存関係
 
 - **Leaflet.js**: 地図表示・制御
-- **EXIF-js**: Exifメタデータ抽出
-- **SunCalc**: 太陽・月の位置計算
-- **ブラウザAPI**: File API, Canvas API, Geolocation API
+- **ExifReader 4.12.0**：自己ホストのExif読み取り
+- **SunCalc 1.9.0**：自己ホストの太陽位置計算
+- **ブラウザーAPI**：File、Web Crypto、Clipboard、Object URL
 
 ---
 
@@ -63,14 +64,12 @@ class WhereShotApp {
 
 ### 2. ExifParser (exif-parser.js)
 
-画像・動画からメタデータを抽出・解析。
+画像からメタデータを抽出します。読み取れない内容は全項目nullの結果とreadFailedで示します。
 
 ```javascript
 class ExifParser {
     async extractExifData(file)
-    processExifData(exifData, file)
-    performSecurityAnalysis(exifData, file)
-    exportData(includeSensitive = false)
+    getExtractedData()
     clearData()
 }
 ```
@@ -81,9 +80,8 @@ class ExifParser {
 
 ```javascript
 class SunCalculator {
-    calculateSunPosition(latitude, longitude, dateTime)
-    verifyShadowDirection(observedDirection, tolerance)
-    generateSunCalcURL(latitude, longitude, dateTime)
+    calculateSunPosition(latitude, longitude, utcMs)
+    getCurrentSunData()
     clearData()
 }
 ```
@@ -97,7 +95,10 @@ class MapController {
     initializeMap(containerId, options)
     setLocation(latitude, longitude, options)
     showAccuracyCircle(latitude, longitude, accuracy)
+    toggleManualLocationMode(enabled)
     toggleDirectionMode(enabled)
+    setExifDirection(directionDeg)
+    setDirection(latitude, longitude)
     switchLayer(layerName)
     resetMap()
 }
@@ -109,12 +110,9 @@ class MapController {
 
 ```javascript
 const WhereShotUtils = {
-    DateUtils: { formatDateTime, parseISOString, formatForInput },
-    GeoUtils: { dmsToDecimal, formatCoordinates, calculateDistance },
-    URLUtils: { generateNASAWorldviewURL, generateGSIMapURL },
     FileUtils: { formatFileSize, validateFile },
     UIUtils: { showError, showSuccess, showLoading },
-    SecurityUtils: { escapeHtml, clearSensitiveData, calculateHash }
+    SecurityUtils: { clearSensitiveData, calculateHash }
 }
 ```
 
@@ -128,7 +126,7 @@ const WhereShotUtils = {
 
 画像ファイルからExif情報を抽出します。
 
-**パラメータ**:
+**パラメーター**:
 - `file`: File - 解析対象の画像ファイル
 
 **戻り値**: Promise<ExifData> - 抽出されたメタデータ
@@ -136,59 +134,57 @@ const WhereShotUtils = {
 **例**:
 ```javascript
 const exifData = await window.WhereShotExifParser.extractExifData(file);
-console.log(exifData.gps.latitude, exifData.gps.longitude);
+// exifData.latitudeとexifData.longitudeを使用する。外部入力はtextContentで表示する。
 ```
 
-#### `exportData(includeSensitive: boolean): string`
-
-Exif情報をJSON形式でエクスポートします。
-
-**パラメータ**:
-- `includeSensitive`: boolean - 機密情報を含めるかどうか
-
-**戻り値**: string - JSON形式の文字列
+読み取りはFile.arrayBuffer()、ExifReader.load(buffer, {expanded:true})、normalizeTagsの順です。
+例外を捕捉して結果を返し、画面はfinallyで読み込み中の状態を解除します。
 
 ### SunCalculator API
 
-#### `calculateSunPosition(latitude: number, longitude: number, dateTime: Date): SunData`
+#### `calculateSunPosition(latitude: number, longitude: number, utcMs: number): SunData`
 
 指定位置・時刻での太陽位置を計算します。
 
-**パラメータ**:
+**パラメーター**:
 - `latitude`: number - 緯度（-90 ～ 90）
 - `longitude`: number - 経度（-180 ～ 180）
-- `dateTime`: Date - 計算対象の日時
+- `utcMs`：number - UTCの瞬間を表すミリ秒
 
 **戻り値**: SunData - 太陽位置データ
 
 **例**:
 ```javascript
 const sunData = window.WhereShotSunCalculator.calculateSunPosition(
-    35.6762, 139.6503, new Date('2024-06-15T12:00:00')
+    34.28611372222222, 133.79983519444446, 1469324037000
 );
-console.log(sunData.position.elevation, sunData.position.azimuth);
+// sunData.altitudeDegは64.0度、azimuthDegは117.3度（小数1桁）
 ```
 
 ### MapController API
 
+解析結果パネルを可視化してからinitializeMapを1回呼びます。
+位置指定・方向指定モードは排他です。方向の本線と2本の先端をdirectionLayerで管理します。
+地図の種類はselectだけで変更し、既存のタイルレイヤーを外してから選択したものを載せます。
 
+### WhereShotLogic URL API
 
-### URLUtils API
-
-#### `generateWeatherURL(lat: number, lng: number, date: Date): string`
-
-指定された緯度・経度と日付に最も近い観測所を自動選択し、  
-**気象庁「過去の天気」ページのURL**を生成します。
-
-```js
-const url = URLUtils.generateWeatherURL(35.6895, 139.6917, new Date("2025-06-01"));
-// → 東京の2025年6月1日の天気ページURL
+```javascript
+const result = WhereShotLogic.jmaHourlyUrl(
+    34.28611372222222, 133.79983519444446, 1469324037000, WhereShotStations
+);
+// result: {url, station: '高松', distanceKm: 23}
 ```
+
+観測所は200km以内だけを採用し、日付はUTCの瞬間を日本時間に変換します。
+NASAとSunCalc.orgのリンクは撮影地の壁時計を使います。
+無効な座標ではnullを返します。経度・緯度の0は有効です。
+
 #### `setLocation(latitude: number, longitude: number, options?: LocationOptions): void`
 
 地図上に位置マーカーを設定します。
 
-**パラメータ**:
+**パラメーター**:
 - `latitude`: number - 緯度
 - `longitude`: number - 経度
 - `options`: LocationOptions - オプション設定
@@ -198,7 +194,6 @@ const url = URLUtils.generateWeatherURL(35.6895, 139.6917, new Date("2025-06-01"
 interface LocationOptions {
     type?: 'photo' | 'manual' | 'default';
     accuracy?: number;
-    dateTime?: Date;
     centerMap?: boolean;
     zoom?: number;
 }
@@ -214,43 +209,30 @@ interface LocationOptions {
 
 ### ExifData
 
+normalizeTagsは次の20項目を返します。ない項目はnullです。
+
 ```typescript
 interface ExifData {
-    file: {
-        name: string;
-        size: number;
-        type: string;
-        lastModified: Date;
-    };
-    dateTime: {
-        original: Date | null;
-        digitized: Date | null;
-        modified: Date | null;
-        timezone: string | null;
-    };
-    gps: {
-        latitude: number | null;
-        longitude: number | null;
-        altitude: number | null;
-        accuracy: number | null;
-    };
-    camera: {
-        make: string | null;
-        model: string | null;
-        lens: string | null;
-        serial: string | null;
-    };
-    settings: {
-        iso: number | null;
-        aperture: number | null;
-        shutter: number | null;
-        focalLength: number | null;
-    };
-    security: {
-        privacyRisk: 'low' | 'medium' | 'high';
-        warnings: string[];
-        recommendations: string[];
-    };
+    dateTimeOriginal: string | null;
+    dateTimeDigitized: string | null;
+    dateTime: string | null;
+    offsetTimeOriginal: string | null;
+    offsetTime: string | null;
+    gpsUtcMs: number | null;
+    latitude: number | null;
+    longitude: number | null;
+    altitude: number | null;
+    imgDirection: number | null;
+    imgDirectionRef: 'T' | 'M' | null;
+    hPositioningError: number | null;
+    make: string | null;
+    model: string | null;
+    software: string | null;
+    lensModel: string | null;
+    exposureTime: number | null;
+    fNumber: number | null;
+    iso: number | null;
+    focalLength: number | null;
 }
 ```
 
@@ -258,29 +240,52 @@ interface ExifData {
 
 ```typescript
 interface SunData {
-    position: {
-        elevation: number;  // 太陽高度（度）
-        azimuth: number;    // 太陽方位（度）
-    };
-    times: {
-        sunrise: Date;
-        sunset: Date;
-        solarNoon: Date;
-    };
-    analysis: {
-        phase: string;      // 時間帯
-        lightQuality: string;
-        shadowLength: number;
-    };
-    shadow: {
-        direction: number;  // 影の方向（度）
-        exists: boolean;
-        description: string;
-    };
+    altitudeDeg: number;
+    azimuthDeg: number;
+    phase: string;
+    shadowDirectionDeg: number | null;
+    shadowRatio: number | null;
 }
 ```
 
----
+### WhereShotLogicの公開関数
+
+| 関数 | 戻り値・用途 |
+|---|---|
+| isValidWall(w) | 有効な年月日時分秒かどうか |
+| parseExifDateTime(str), inputValueToWall(v), utcMsToWall(ms, offsetMin) | 壁時計またはnull |
+| parseOffset(str) | -720〜840のオフセット分またはnull |
+| formatOffset(n), formatWall(w, offsetMin), formatUtc(ms), wallToInputValue(w) | 書式付き文字列 |
+| wallToUtcMs(w, offsetMin), gpsDateTimeToUtcMs(date, time) | UTCミリ秒またはnull |
+| inferOffsetFromGps(w, ms) | {offsetMin, residualSec}またはnull |
+| decideOffset(input) | {offsetMin, source, residualSec, conflict} |
+| longitudeOffsetHint(lng) | 表示用の目安（自動適用しない） |
+| normalizeTags(tags) | ExifData |
+| formatExposure(time), formatCamera(make, model) | 表示用文字列 |
+| extractDatesFromFilename(name, nowMs) | {pattern, matched, hasTime, reliability, wallまたはutcMs}の配列 |
+| estimateDateTime(input) | {sources, conflicts, notes, agreement, best, estimatedUtcMs, confidence} |
+| sunReport(SunCalc, lat, lng, utcMs) | SunDataまたはnull |
+| sunPhaseKey(alt, az), toCardinalJa(degrees) | 時間帯キー、日本語16方位 |
+| isValidLatLng(lat, lng), decimalToDms(value, isLat) | 座標の検証、度分秒表記 |
+| distanceM(lat1, lng1, lat2, lng2), bearing(lat1, lng1, lat2, lng2) | メートル、北基準の方位角 |
+| destinationPoint(lat, lng, bearing, distance) | {lat, lng} |
+| nearestStation(lat, lng, stations, maxKm=200) | {station, distanceKm}またはnull |
+| nasaWorldviewUrl(lat, lng, wall), sunCalcOrgUrl(lat, lng, wall) | 現地の日付・時刻を使うURL |
+| gsiMapUrl(lat, lng, photo), streetViewUrl(lat, lng, heading) | URLまたはnull |
+| jmaHourlyUrl(lat, lng, utcMs, stations) | {url, station, distanceKm}またはnull |
+| buildReport(d), formatInt(n) | レポート、3桁区切り文字列 |
+
+公開定数はOFFSET_CHOICES（38件）、FILENAME_PATTERNS（11種）、SOURCE_LABEL、PHASE_JA、JMA_TOPです。
+ロジックはDOM、現在時刻、crypto、ローカルタイムゾーンに依存しません。
+ブラウザーの仮オフセットだけはDOM側で撮影日時の夏時間を含めて求めます。
+
+### SHA-256とレポート
+
+main.jsのcalculateFileHashはファイルのArrayBufferをWeb CryptoのSHA-256へ渡します。
+buildReportにはfileName、fileSize、fileType、sha256、wall、offsetMin、offsetSource、residualSec、
+dateSourceLabel、confidence、latitude、longitude、locationSource、directionDeg、sun、station、
+stationKm、generatedAtUtcMsを渡します。
+作成時刻はDOM側がDate.now()で用意します。結果はtextContentでpreに入れ、Clipboard APIが使えるときだけコピーします。
 
 ## ⚡ イベントシステム
 
@@ -295,7 +300,7 @@ WhereShotは、カスタムイベントを使用してモジュール間の通�
 ```javascript
 document.addEventListener('whereshot:locationChanged', (event) => {
     const { latitude, longitude } = event.detail;
-    console.log('位置が変更されました:', latitude, longitude);
+    // latitude・longitudeを表示に反映する。コンソールには記録しない。
 });
 ```
 
@@ -306,7 +311,7 @@ document.addEventListener('whereshot:locationChanged', (event) => {
 ```javascript
 document.addEventListener('whereshot:directionChanged', (event) => {
     const { direction, distance } = event.detail;
-    console.log('方向:', direction, '距離:', distance);
+    // directionがnullなら方向指定が解除された状態。
 });
 ```
 
@@ -353,45 +358,17 @@ updateCustomDisplay(results) {
 }
 ```
 
-### 外部API連携の追加
+### 外部リンクの保守
 
-1. **URLUtilsに新しい関数を追加**:
-```javascript
-// utils.js内
-URLUtils.generateNewServiceURL = (lat, lng, date) => {
-    return `https://newservice.com/api?lat=${lat}&lng=${lng}&date=${date}`;
-};
-```
+URL生成はWhereShotLogicの純粋関数へ置き、画面の解析日時とオフセットを使います。
+外部APIは追加しません。画像やExifを送信する処理を追加しないでください。
 
-2. **UIにリンクを追加**:
-```html
-<a id="new-service-link" href="#" target="_blank" class="btn btn-external">
-    新しいサービス
-</a>
-```
+### 対応ファイル形式の保守
 
-### 新しいファイル形式のサポート
-
-1. **FileUtilsで対応形式を追加**:
-```javascript
-getFileType: (fileName) => {
-    const extension = fileName.split('.').pop().toLowerCase();
-    const newTypes = ['new-format'];
-    
-    if (newTypes.includes(extension)) return 'new-format';
-    // ... 既存のロジック
-}
-```
-
-2. **ExifParserで解析ロジックを追加**:
-```javascript
-extractExifData(file) {
-    if (file.type === 'new-format') {
-        return this.parseNewFormat(file);
-    }
-    // ... 既存のロジック
-}
-```
+FileUtils.validateFileのallowedTypes、index.htmlのaccept、READMEの対応形式の表をそろえます。
+ExifReader 4.12.0が読み取れる形式に限り、読み取り失敗時もnormalizeTags({})と同じ形を返します。
+ブラウザーがプレビューできない形式でもメタデータ解析を継続します。
+形式の追加には、実ファイルの読み取り・表示・エラー復旧の検証が必要です。
 
 ---
 
@@ -400,26 +377,26 @@ extractExifData(file) {
 ### プライバシー保護
 
 1. **ローカル処理の徹底**:
-   - すべてのファイル処理はブラウザ内で完結
+   - すべてのファイル処理はブラウザー内で完結
    - 外部サーバーへの画像送信は一切なし
 
 2. **機密データの適切な処理**:
    ```javascript
    // 機密データのクリア
-   SecurityUtils.clearSensitiveData(sensitiveObject);
+   window.WhereShotUtils.SecurityUtils.clearSensitiveData(sensitiveObject);
    ```
 
 3. **メタデータのサニタイゼーション**:
    ```javascript
-   // XSS防止
-   const safeText = SecurityUtils.escapeHtml(userInput);
+   // 外部入力をHTMLとして解釈しない。
+   element.textContent = userInput;
    ```
 
 ### 入力検証
 
 1. **ファイル検証**:
    ```javascript
-   const validation = FileUtils.validateFile(file);
+   const validation = window.WhereShotUtils.FileUtils.validateFile(file);
    if (!validation.isValid) {
        throw new Error(validation.errors.join(', '));
    }
@@ -439,114 +416,54 @@ extractExifData(file) {
    try {
        const result = await riskyOperation();
    } catch (error) {
-       console.error('処理エラー:', error);
-       UIUtils.showError(`エラー: ${error.message}`);
+       console.error('処理に失敗しました');
+       window.WhereShotUtils.UIUtils.showError('処理に失敗しました。内容を確認してください');
    }
    ```
 
 2. **ユーザーフレンドリーなエラーメッセージ**:
    ```javascript
-   UIUtils.showError('ファイルの読み込みに失敗しました。ファイル形式を確認してください。');
+   window.WhereShotUtils.UIUtils.showError('ファイルの読み込みに失敗しました。ファイル形式を確認してください。');
    ```
 
 ---
 
 ## 🧪 テスト
 
-### 単体テスト例
+### 自動テスト
 
-```javascript
-// ExifParserのテスト例
-describe('ExifParser', () => {
-    test('GPS座標の変換', () => {
-        const parser = new ExifParser();
-        const result = parser.convertGPSCoordinate([35, 40, 30], 'N');
-        expect(result).toBeCloseTo(35.675, 3);
-    });
-});
-```
+Node 22以上でnpm testを実行します。node:testとnode:assert/strictだけを使い、依存追加とネットワークアクセスは不要です。
+test/には実画像Exif、時刻、太陽、URL、レポート、観測所、vendorハッシュ、README、HTML、配色、整形の検証があります。
+timezone.test.jsは4つのTZで同じ子プロセスを実行し、計算結果が一致することと、実際にTZが切り替わっていることを確認します。
 
-### 統合テスト例
+### ブラウザーでの確認
 
-```javascript
-// ファイル処理の統合テスト
-describe('ファイル処理フロー', () => {
-    test('GPS付き画像の完全な処理', async () => {
-        const mockFile = new File([''], 'test.jpg', { type: 'image/jpeg' });
-        const app = new WhereShotApp();
-        
-        await app.handleFileSelection(mockFile);
-        
-        expect(app.currentExifData).toBeDefined();
-        expect(app.currentExifData.gps.latitude).toBeDefined();
-    });
-});
-```
-
----
+HTTPとfile://の両方で、画像選択、壊れた画像からの復旧、XSS文字列のファイル名、
+UTCオフセット、地図操作、コピー、プレビュー、ダイアログを確認します。
 
 ## 📈 パフォーマンス最適化
 
 ### 大きなファイルの処理
 
-```javascript
-// チャンク処理の例
-async processLargeFile(file) {
-    const chunkSize = 1024 * 1024; // 1MB
-    const chunks = Math.ceil(file.size / chunkSize);
-    
-    for (let i = 0; i < chunks; i++) {
-        const start = i * chunkSize;
-        const end = Math.min(start + chunkSize, file.size);
-        const chunk = file.slice(start, end);
-        
-        await this.processChunk(chunk);
-        
-        // UI更新（進捗表示）
-        this.updateProgress((i + 1) / chunks * 100);
-    }
-}
-```
+受け付ける上限は100MBです。ファイルはArrayBufferとして読み込みます。
+チャンク解析は実装していません。メタデータの読み取り失敗もfinallyで読み込み中の状態を解除します。
 
 ### メモリ管理
 
-```javascript
-// データクリアの例
-clearAllData() {
-    // 各モジュールのデータをクリア
-    this.exifParser.clearData();
-    this.sunCalculator.clearData();
-    this.mapController.resetMap();
-    
-    // ガベージコレクションを促進
-    this.currentFile = null;
-    this.currentExifData = null;
-}
-```
+次のファイルを処理する前にclearAnalysisDataで参照と表示を消します。
+プレビューのObject URLは非表示・ファイル変更・リセット時にrevokeObjectURLで解放します。
+これはメモリの安全な消去やブラウザーの履歴消去を保証するものではありません。
+
 
 ---
 
 ## 🚀 デプロイメント
 
-### GitHub Pages デプロイ
+### GitHub Pagesデプロイ
 
-1. **設定ファイル** (`.github/workflows/deploy.yml`):
-```yaml
-name: Deploy to GitHub Pages
-on:
-  push:
-    branches: [ main ]
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
-```
+mainブランチのルートをlegacyビルドで配信します。.nojekyllによりvendor/も静的ファイルとして配信します。
+.github/workflows/test.ymlはpushとpull_requestでNode 22のnpm testを実行します。
+公開後はvendor/の取得可否と、配信ファイルのSHA-256がGitのバイト列と一致することを確認します。
 
 ### カスタムドメイン
 
@@ -562,4 +479,4 @@ CNAME whereshot.yourdomain.com -> username.github.io
 
 ---
 
-このAPI仕様書は、WhereShotの拡張や統合を行う開発者向けの技術資料です。詳細な実装例や最新の情報については、ソースコードとGitHubリポジトリを参照してください。
+このAPI仕様書は、WhereShotの拡張や統合を行う開発者向けの技術資料です。詳細な実装例や最新の情報については、ソースコードとGitHubリポジトリーを参照してください。

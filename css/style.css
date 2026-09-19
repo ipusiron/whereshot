@@ -9,46 +9,51 @@
 }
 
 :root {
-    /* モダンカラーパレット */
-    --primary: #6366f1;
-    --primary-light: #818cf8;
-    --primary-dark: #4f46e5;
-    --secondary: #8b5cf6;
-    --accent: #06d6a0;
-    --accent-warm: #f59e0b;
-    --danger: #ef4444;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --info: #06b6d4;
-    
-    /* 背景グラデーション */
-    --bg-gradient: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 25%, #2d1b69 50%, #1a1a3e 75%, #0f0f23 100%);
-    --bg-card: rgba(255, 255, 255, 0.05);
-    --bg-card-hover: rgba(255, 255, 255, 0.08);
-    --bg-glass: rgba(255, 255, 255, 0.1);
-    --bg-input: rgba(255, 255, 255, 0.05);
-    
-    /* テキスト */
-    --text-primary: #f8fafc;
+    /* 不透明な面を使い、文字と操作部品のコントラストを確保する。 */
+    --bg: #0f0f23;
+    --bg-peak: #2d1b69;
+    --surface: #232346;
+    --surface-2: #2c2c55;
+    --text: #f8fafc;
     --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
-    --text-accent: #a78bfa;
-    
-    /* ボーダー */
-    --border: rgba(255, 255, 255, 0.1);
-    --border-light: rgba(255, 255, 255, 0.15);
-    
-    /* シャドウ & ブラー */
+    --text-muted: #a9b4c6;
+    --text-accent: #c4b5fd;
+    --primary: #4f46e5;
+    --danger: #b91c1c;
+    --success: #047857;
+    --warning: #fbbf24;
+    --external: #0e7490;
+    --info: #67e8f9;
+    --link: #93c5fd;
+    --ok: #6ee7b7;
+    --warn: #fcd34d;
+    --err: #fca5a5;
+    --border: #7c7fa8;
+    --focus: #a5b4fc;
+    --button-text: #ffffff;
+    --warning-text: #1f1300;
+
+    /* 既存のカード構成で使う別名。 */
+    --primary-light: var(--text-accent);
+    --primary-dark: var(--primary);
+    --secondary: var(--text-accent);
+    --accent: var(--ok);
+    --accent-warm: var(--warn);
+    --bg-gradient: linear-gradient(135deg, var(--bg) 0%, var(--bg-peak) 50%, var(--bg) 100%);
+    --bg-card: var(--surface);
+    --bg-card-hover: var(--surface-2);
+    --bg-glass: var(--surface);
+    --bg-input: var(--surface-2);
+    --text-primary: var(--text);
+    --border-light: var(--border);
+
+    /* 装飾の影とアニメーション。 */
     --shadow-glass: 0 8px 32px rgba(31, 38, 135, 0.37);
     --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
     --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
     --blur: blur(8px);
-    
-    /* アニメーション */
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s ease-out;
-    
-    /* フォント */
     --font-sans: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
 }
@@ -59,8 +64,7 @@ body {
     background-attachment: fixed;
     color: var(--text-primary);
     line-height: 1.6;
-    min-height: 100vh;
-    overflow-x: hidden;
+    min-height: 100dvh;
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -112,26 +116,13 @@ body {
 
 /* ========== レイアウト ========== */
 .app-container {
-    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     position: relative;
 }
 
-.app-container::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: 
-        radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(6, 214, 160, 0.05) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: -1;
-}
+
 
 .main-content {
     flex: 1;
@@ -144,7 +135,7 @@ body {
 
 /* ========== ヘッダー ========== */
 .app-header {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--surface);
     backdrop-filter: var(--blur);
     -webkit-backdrop-filter: var(--blur);
     border-bottom: 1px solid var(--border);
@@ -175,12 +166,7 @@ body {
 .title-main {
     font-size: 2.5rem;
     font-weight: 800;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
-    animation: glow 3s ease-in-out infinite;
+    color: var(--text-accent);
 }
 
 .title-sub {
@@ -201,6 +187,8 @@ body {
     border: none;
     border-radius: 1rem;
     font-size: 0.875rem;
+    min-height: 44px;
+    justify-content: center;
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition);
@@ -215,20 +203,7 @@ body {
     -webkit-backdrop-filter: var(--blur);
 }
 
-.btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
-}
 
-.btn:hover::before {
-    left: 100%;
-}
 
 .btn:hover {
     transform: translateY(-2px);
@@ -240,14 +215,14 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-    color: white;
+    background: var(--primary);
+    color: var(--button-text);
     box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
 
 .btn-primary:hover {
     box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
-    background: linear-gradient(135deg, var(--primary-light) 0%, var(--secondary) 100%);
+    background: var(--primary);
 }
 
 .btn-secondary {
@@ -259,18 +234,18 @@ body {
 
 .btn-secondary:hover {
     background: var(--bg-card-hover);
-    border-color: var(--primary);
+    border-color: var(--focus);
 }
 
 .btn-danger {
-    background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
-    color: white;
+    background: var(--danger);
+    color: var(--button-text);
     box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
 }
 
 .btn-external {
-    background: linear-gradient(135deg, var(--info) 0%, #0891b2 100%);
-    color: white;
+    background: var(--external);
+    color: var(--button-text);
     font-size: 0.8rem;
     padding: 0.5rem 1rem;
     border-radius: 0.75rem;
@@ -281,7 +256,7 @@ body {
     backdrop-filter: var(--blur);
     -webkit-backdrop-filter: var(--blur);
     color: var(--text-primary);
-    border: 2px solid var(--primary);
+    border: 2px solid var(--focus);
     padding: 0.6rem 1.2rem;
     font-size: 0.875rem;
     font-weight: 600;
@@ -291,8 +266,8 @@ body {
 }
 
 .btn-link:hover {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-    color: white;
+    background: var(--primary);
+    color: var(--button-text);
     border-color: var(--primary-light);
     box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
     transform: translateY(-2px);
@@ -333,7 +308,7 @@ body {
 
 .drop-zone:hover,
 .drop-zone.drag-over {
-    border-color: var(--primary);
+    border-color: var(--focus);
     background: var(--bg-card-hover);
     transform: scale(1.02);
     box-shadow: var(--shadow-xl);
@@ -344,7 +319,7 @@ body {
     opacity: 1;
 }
 
-.drop-zone-content h3 {
+.drop-zone-content h2 {
     margin: 1rem 0 1rem;
     color: var(--text-primary);
     font-weight: 700;
@@ -390,7 +365,7 @@ body {
     gap: 1rem;
 }
 
-.preview-header h3 {
+.preview-header h2 {
     color: var(--text-primary);
     font-size: 1.5rem;
     font-weight: 700;
@@ -455,13 +430,13 @@ body {
 .privacy-notice {
     margin-top: 1rem;
     padding: 0.75rem;
-    background: rgba(16, 185, 129, 0.1);
+    background: var(--surface-2);
     border-radius: 0.5rem;
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    border: 1px solid var(--border);
 }
 
 .privacy-notice small {
-    color: var(--success);
+    color: var(--ok);
     font-size: 0.8rem;
     line-height: 1.3;
 }
@@ -470,7 +445,7 @@ body {
 .drop-zone.uploaded {
     padding: 2rem;
     background: var(--bg-card);
-    border-color: var(--success);
+    border-color: var(--ok);
 }
 
 .drop-zone.uploaded .drop-zone-content {
@@ -486,10 +461,10 @@ body {
     margin-bottom: 0;
 }
 
-.drop-zone.uploaded h3 {
+.drop-zone.uploaded h2 {
     font-size: 1.2rem;
     margin: 0;
-    color: var(--success);
+    color: var(--ok);
 }
 
 .drop-zone.uploaded p,
@@ -585,7 +560,7 @@ body {
     transform: scaleX(1);
 }
 
-.info-card h4 {
+.info-card h3 {
     color: var(--text-accent);
     font-size: 0.875rem;
     margin-bottom: 0.75rem;
@@ -602,6 +577,10 @@ body {
     word-break: break-all;
 }
 
+#datetime-info {
+    white-space: pre-line;
+}
+
 /* GPSステータスバッジ */
 .gps-status-badge {
     display: inline-block;
@@ -616,15 +595,15 @@ body {
 }
 
 .gps-status-badge.gps-available {
-    background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-    color: white;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: var(--success);
+    color: var(--button-text);
+    border: 1px solid var(--border);
 }
 
 .gps-status-badge.gps-unavailable {
-    background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
-    color: white;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: var(--danger);
+    color: var(--button-text);
+    border: 1px solid var(--border);
 }
 
 /* ========== 推定日時セクション ========== */
@@ -694,15 +673,15 @@ body {
 }
 
 .estimation-confidence.high {
-    color: var(--success);
+    color: var(--ok);
 }
 
 .estimation-confidence.medium {
-    color: var(--warning);
+    color: var(--warn);
 }
 
 .estimation-confidence.low {
-    color: var(--danger);
+    color: var(--err);
 }
 
 /* 警告メッセージ */
@@ -729,19 +708,19 @@ body {
 }
 
 .warning-item.error {
-    background: rgba(239, 68, 68, 0.1);
+    background: var(--surface-2);
     border-left: 3px solid var(--danger);
-    color: var(--danger);
+    color: var(--err);
 }
 
 .warning-item.warning {
-    background: rgba(245, 158, 11, 0.1);
+    background: var(--surface-2);
     border-left: 3px solid var(--warning);
-    color: var(--warning);
+    color: var(--warn);
 }
 
 .warning-item.info {
-    background: rgba(6, 182, 212, 0.1);
+    background: var(--surface-2);
     border-left: 3px solid var(--info);
     color: var(--info);
 }
@@ -759,7 +738,7 @@ body {
     border: 1px solid var(--border);
 }
 
-.estimation-sources h5 {
+.estimation-sources h4 {
     color: var(--text-accent);
     font-size: 0.9rem;
     font-weight: 600;
@@ -820,21 +799,21 @@ body {
 
 /* 信頼度による色分け */
 .source-reliability.high {
-    color: var(--success);
-    border-color: var(--success);
-    background: rgba(16, 185, 129, 0.1);
+    color: var(--ok);
+    border-color: var(--ok);
+    background: var(--surface-2);
 }
 
 .source-reliability.medium {
-    color: var(--warning);
-    border-color: var(--warning);
-    background: rgba(245, 158, 11, 0.1);
+    color: var(--warn);
+    border-color: var(--warn);
+    background: var(--surface-2);
 }
 
 .source-reliability.low {
-    color: var(--danger);
-    border-color: var(--danger);
-    background: rgba(239, 68, 68, 0.1);
+    color: var(--err);
+    border-color: var(--err);
+    background: var(--surface-2);
 }
 
 /* ========== 地図コントロール（修正版） ========== */
@@ -853,19 +832,21 @@ body {
     border: 1px solid var(--border);
     padding: 0.75rem 1rem;
     border-radius: 1rem;
-    font-size: 0.875rem;
+    font-size: 16px;
     transition: var(--transition);
-    outline: none;
+    min-height: 44px;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .form-select:focus, .form-input:focus {
-    border-color: var(--primary);
+    border-color: var(--focus);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 /* セレクトボックスのオプション要素 */
 .form-select option {
-    background: #1a1a3e;
+    background: var(--surface-2);
     color: var(--text-primary);
     padding: 0.5rem;
 }
@@ -878,9 +859,9 @@ body {
 /* 地図コンテナ（修正版） */
 .map-container {
     width: 100%;
-    height: 500px;
-    min-height: 400px;
-    min-width: 300px;
+    height: 350px;
+    min-height: 300px;
+    min-width: 0;
     border-radius: 1.5rem;
     overflow: hidden;
     border: 1px solid var(--border);
@@ -941,7 +922,7 @@ body {
 .map-container.map-error {
     pointer-events: none;
     background: var(--bg-card);
-    border-color: var(--danger);
+    border-color: var(--err);
 }
 
 .map-container.map-error::before {
@@ -965,7 +946,7 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 1001;
-    color: var(--danger);
+    color: var(--err);
     font-size: 1rem;
     font-weight: 600;
     text-align: center;
@@ -980,77 +961,6 @@ body {
 
 .leaflet-control-container {
     font-family: var(--font-sans) !important;
-}
-
-/* レイヤーコントロールのライトモード対応（視認性優先） */
-.leaflet-control-layers {
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: var(--blur) !important;
-    -webkit-backdrop-filter: var(--blur) !important;
-    border: 2px solid rgba(0, 0, 0, 0.2) !important;
-    border-radius: 1rem !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-    color: #222 !important;
-    padding: 0.75rem !important;
-}
-
-.leaflet-control-layers-toggle {
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: var(--blur) !important;
-    border-radius: 0.75rem !important;
-    border: 2px solid rgba(0, 0, 0, 0.2) !important;
-}
-
-.leaflet-control-layers-expanded {
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: var(--blur) !important;
-    -webkit-backdrop-filter: var(--blur) !important;
-    border: 2px solid rgba(0, 0, 0, 0.2) !important;
-    color: #222 !important;
-}
-
-.leaflet-control-layers-base label,
-.leaflet-control-layers-overlays label {
-    color: #222 !important;
-    font-weight: 600 !important;
-    padding: 0.5rem 0.25rem !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 0.5rem !important;
-    cursor: pointer !important;
-    transition: var(--transition-fast) !important;
-    border-radius: 0.5rem !important;
-}
-
-/* ラベル内のspan要素にも確実に色を適用 */
-.leaflet-control-layers-base label span,
-.leaflet-control-layers-overlays label span {
-    color: #222 !important;
-    font-weight: 600 !important;
-    text-shadow: none !important;
-}
-
-.leaflet-control-layers-base label:hover,
-.leaflet-control-layers-overlays label:hover {
-    background: rgba(99, 102, 241, 0.15) !important;
-    color: var(--primary-dark) !important;
-}
-
-.leaflet-control-layers-base label:hover span,
-.leaflet-control-layers-overlays label:hover span {
-    color: var(--primary-dark) !important;
-}
-
-.leaflet-control-layers-selector {
-    margin-right: 0.5rem !important;
-    cursor: pointer !important;
-    /* ラジオボタン自体の視認性も改善 */
-    accent-color: var(--primary) !important;
-}
-
-.leaflet-control-layers-separator {
-    border-top: 1px solid rgba(0, 0, 0, 0.15) !important;
-    margin: 0.5rem 0 !important;
 }
 
 /* Leafletズームコントロール */
@@ -1077,7 +987,7 @@ body {
 
 .leaflet-control-zoom a:hover {
     background: var(--bg-card-hover) !important;
-    color: var(--primary) !important;
+    color: var(--link) !important;
 }
 
 /* Leafletスケールコントロール */
@@ -1112,7 +1022,7 @@ body {
 }
 
 .leaflet-control-attribution a {
-    color: var(--primary) !important;
+    color: var(--link) !important;
 }
 
 .leaflet-control-attribution a:hover {
@@ -1149,16 +1059,6 @@ body {
     color: var(--text-secondary);
 }
 
-/* 方向矢印（修正版） */
-.direction-arrow {
-    color: var(--danger) !important;
-    font-size: 1.2rem !important;
-    font-weight: bold !important;
-    text-shadow: 0 0 10px rgba(239, 68, 68, 0.5) !important;
-    transform-origin: center !important;
-    z-index: 1000 !important;
-}
-
 /* 位置ポップアップ */
 .location-popup {
     min-width: 200px;
@@ -1166,7 +1066,7 @@ body {
     color: var(--text-primary);
 }
 
-.location-popup h4 {
+.location-popup h3 {
     margin: 0 0 0.5rem 0;
     font-size: 1rem;
     color: var(--text-primary);
@@ -1243,7 +1143,7 @@ body {
     transform: scaleX(1);
 }
 
-.sun-info-card h4 {
+.sun-info-card h3 {
     color: var(--text-accent);
     font-size: 0.875rem;
     margin-bottom: 0.75rem;
@@ -1280,7 +1180,7 @@ body {
     box-shadow: var(--shadow-lg);
 }
 
-.link-group h4 {
+.link-group h3 {
     color: var(--text-accent);
     margin-bottom: 1rem;
     font-size: 1.1rem;
@@ -1289,19 +1189,18 @@ body {
 
 /* ========== モーダル ========== */
 .modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    margin: auto;
+    max-width: min(700px, calc(100% - 32px));
+    max-height: calc(100dvh - 32px);
+    border: 1px solid var(--border);
+    border-radius: 2rem;
+    background: var(--surface);
+    color: var(--text);
+    padding: 0;
+}
+
+.modal::backdrop {
     background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: var(--blur);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    animation: slideUp 0.3s ease-out;
 }
 
 .modal-content {
@@ -1311,7 +1210,7 @@ body {
     padding: 3rem;
     max-width: 600px;
     width: 100%;
-    max-height: 80vh;
+    max-height: calc(100dvh - 40px);
     overflow-y: auto;
     position: relative;
     border: 1px solid var(--border-light);
@@ -1326,8 +1225,9 @@ body {
     cursor: pointer;
     color: var(--text-muted);
     transition: var(--transition-fast);
-    width: 2rem;
-    height: 2rem;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1342,7 +1242,7 @@ body {
 }
 
 .help-content h3 {
-    color: var(--primary);
+    color: var(--text-accent);
     margin: 2rem 0 1rem;
     font-weight: 700;
 }
@@ -1392,12 +1292,12 @@ body {
 }
 
 .footer a {
-    color: #007bff;
+    color: var(--link);
     transition: var(--transition-fast);
 }
 
 .footer a:hover {
-    color: var(--primary);
+    color: var(--text-accent);
     text-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
 }
 
@@ -1517,20 +1417,18 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: var(--border);
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, var(--primary-light), var(--accent));
+    background: var(--focus);
 }
 
 /* ========== フォーカス状態 ========== */
-.btn:focus,
-.form-input:focus,
-.form-select:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
 }
 
 /* ========== ユーティリティクラス ========== */
@@ -1561,4 +1459,318 @@ body {
     background: linear-gradient(90deg, var(--primary), var(--secondary), var(--primary));
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
+}
+
+/* ========== 状態・追加情報とモバイル操作 ========== */
+[hidden], .is-hidden {
+    display: none !important;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.is-loading {
+    pointer-events: none;
+}
+
+.is-loading::after {
+    content: '解析中です…';
+    display: block;
+    color: var(--info);
+    background: var(--surface);
+}
+
+.btn:disabled, .btn[aria-disabled="true"] {
+    background: var(--surface-2);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    cursor: not-allowed;
+}
+
+.btn[aria-pressed="true"] {
+    background: var(--primary);
+    color: var(--button-text);
+    outline: 2px solid var(--focus);
+}
+
+.map-picking {
+    cursor: crosshair;
+}
+
+.leaflet-touch .leaflet-bar a, .leaflet-bar a {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+    color: var(--text);
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+}
+
+.location-popup p, .estimation-value, #utc-offset-source {
+    white-space: pre-wrap;
+}
+
+#toast-region {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    max-width: min(440px, calc(100% - 32px));
+    z-index: 2000;
+}
+
+.toast {
+    color: var(--button-text);
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    margin-top: 8px;
+    box-shadow: var(--shadow-lg);
+    overflow-wrap: anywhere;
+}
+
+.toast--error {
+    background: var(--danger);
+}
+
+.toast--success {
+    background: var(--success);
+}
+
+.report-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2rem;
+    padding: 1.5rem;
+}
+
+#report-preview {
+    background: var(--surface-2);
+    margin-top: 1rem;
+    padding: 1rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+}
+
+.file-info, .info-card, .source-item, .link-group {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+#file-sha256 {
+    overflow-wrap: anywhere;
+}
+
+.privacy-notice, .privacy-note, .estimation-caveat, #utc-offset-source {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin: 0.75rem 0;
+}
+
+.app-header {
+    position: relative;
+    padding: 0.75rem 0;
+}
+
+.upload-section {
+    margin-bottom: 1.25rem;
+}
+
+.drop-zone.uploaded {
+    padding: 1rem;
+}
+
+.drop-zone.uploaded .drop-zone-content {
+    flex-wrap: wrap;
+}
+
+.drop-zone.uploaded small {
+    flex-basis: 100%;
+}
+
+.image-preview {
+    margin-top: 1rem;
+    padding: 1.25rem;
+}
+
+.preview-header {
+    margin-bottom: 0.75rem;
+}
+
+.preview-content {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+}
+
+.file-info, .info-card, .estimated-datetime, .sun-info-card {
+    padding: 0.875rem;
+}
+
+.file-basic-info {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem 1rem;
+}
+
+.file-basic-info p {
+    margin: 0;
+}
+
+.file-basic-info .hash-row {
+    grid-column: 1 / -1;
+}
+
+.info-panel, .map-panel, .sun-panel, .external-panel {
+    padding: 1.25rem;
+}
+
+.analysis-results {
+    gap: 1.25rem;
+}
+
+.info-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.datetime-estimation-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+}
+
+.datetime-estimation-section h3, .info-panel h2, .map-panel h2, .sun-panel h2 {
+    margin-bottom: 0.75rem;
+}
+
+.estimation-result, .sources-list {
+    gap: 0.5rem;
+}
+
+.estimation-sources {
+    padding: 0.75rem;
+}
+
+.source-item {
+    padding: 0.35rem 0.5rem;
+}
+
+.estimation-header {
+    margin-bottom: 0.5rem;
+}
+
+.sun-info-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.sun-value {
+    font-size: 1.1rem;
+}
+
+.external-links {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 1rem;
+    }
+
+    .drop-zone, .info-panel, .map-panel, .sun-panel, .external-panel {
+        margin: 0;
+    }
+
+    .info-grid, .sun-info-grid, .external-links, .file-basic-info {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .header-actions {
+        flex-wrap: wrap;
+    }
+
+    .drop-zone.uploaded .drop-zone-content {
+        display: block;
+        text-align: center;
+    }
+
+    .image-preview, .info-panel, .map-panel, .sun-panel, .external-panel {
+        padding: 1rem;
+        border-radius: 1.25rem;
+    }
+
+    .map-controls, .sun-controls {
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .form-select, .form-input, .btn {
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .source-datetime {
+        min-width: 0;
+    }
+
+    .modal-content {
+        margin: 0;
+        padding: 4rem 1.25rem 1.25rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+
+    .btn:hover, .info-panel:hover, .map-panel:hover, .sun-panel:hover,
+    .info-card:hover, .sun-info-card:hover, .image-display img:hover, .drop-zone:hover {
+        transform: none;
+    }
+}
+
+/* 推定根拠は横に並べ、ファイル情報と一緒に確認できるようにする。 */
+@media (min-width: 1024px) {
+    .estimation-result {
+        grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+        align-items: start;
+    }
+
+    .estimation-warnings {
+        grid-column: 1 / -1;
+        order: 2;
+    }
+
+    .estimation-sources {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .source-type, .source-datetime {
+        min-width: 0;
+    }
+}
+
+.map-privacy-notice, .direction-info, .estimation-note {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}
+
+.map-privacy-notice {
+    margin-top: -0.75rem;
 }
