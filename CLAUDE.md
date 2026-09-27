@@ -33,7 +33,8 @@ HTTP is recommended for map use because file:// cannot send a valid HTTP Referer
 
 ### File Structure
 
-- js/whereshot-logic.js: pure calculations, no DOM or environment-dependent clock
+- js/i18n.js: the Japanese and English dictionaries and the DOM layer; the only file that wording lives in
+- js/whereshot-logic.js: pure calculations, no DOM, no environment-dependent clock, no wording
 - js/main.js: DOM, file selection, UTC offset selection, SHA-256, report and preview
 - js/exif-parser.js: File.arrayBuffer and ExifReader adapter
 - js/sun-calculator.js: SunCalc adapter
@@ -57,6 +58,7 @@ window.WhereShotExifParser   // Metadata extraction engine
 window.WhereShotMapController // Map management
 window.WhereShotSunCalculator // Solar position calculations
 globalThis.WhereShotLogic    // Pure calculations, also CommonJS-compatible
+window.I18n                  // Japanese/English dictionaries and the DOM layer
 window.WhereShotUtils        // Shared utilities
 window.WhereShotStations     // Weather station data
 ```
@@ -68,13 +70,14 @@ All scripts are classic scripts with defer, in this order:
 1. Leaflet 1.9.4 (cdnjs, existing SRI)
 2. vendor/exifreader/exif-reader.min.js
 3. vendor/suncalc/suncalc.js
-4. data/stations.js
-5. js/whereshot-logic.js
-6. js/utils.js
-7. js/exif-parser.js
-8. js/sun-calculator.js
-9. js/map-controller.js
-10. js/main.js
+4. js/i18n.js
+5. data/stations.js
+6. js/whereshot-logic.js
+7. js/utils.js
+8. js/exif-parser.js
+9. js/sun-calculator.js
+10. js/map-controller.js
+11. js/main.js
 
 ### Initialization Flow
 
@@ -137,7 +140,7 @@ jmaHourlyUrl uses the UTC instant converted to Japan time, and hourly_s1.php.
 sunReport receives SunCalc as an argument and uses a UTC instant.
 sunPhaseKey uses altitude and azimuth, not sunrise/sunset times (polar regions can lack these).
 Azimuth is clockwise from true north. Shadows below the horizon are null.
-All direction labels use toCardinalJa.
+Direction labels come from cardinalKey, translated at display time.
 
 ### 5. Map Management
 
@@ -173,9 +176,22 @@ img-src 'self' data: blob: https://tile.openstreetmap.org https://server.arcgiso
 connect-src 'none'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
 ```
 
+### 7. Japanese and English
+
+Files: js/i18n.js plus the render* methods in main.js and map-controller.js.
+The dictionaries hold every visible string; the pure logic returns {key, params}.
+`?lang=`, then localStorage (`whereshot-language`), then `navigator.language` decide the language.
+`setLanguage` fires `languagechange`; both render* entry points redraw from state, never from displayed text.
+Never put `data-i18n` on a slot that JavaScript writes, or on an attribute that changes with state:
+`apply()` overwrites unconditionally, so the result would roll back to the initial wording.
+Station names and the Japanese filename patterns stay in Japanese; they are data, not wording.
+
 ### Must Not Do
 
 - Do not use local-time Date getters, multi-argument Date, or locale formatting in whereshot-logic.js.
+- Do not put Japanese or English wording in any file under js/ other than i18n.js.
+- Do not keep state in a displayed string, and do not compare against one.
+- Do not translate Exif tag names, segment names, map service names, coordinate notation, or station names.
 - Do not use DOM, network, storage, randomness or current time inside pure logic.
 - Do not change referrer to no-referrer; keep strict-origin-when-cross-origin for OSM.
 - Do not restore the {s} subdomain in the OSM tile URL.

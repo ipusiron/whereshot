@@ -19,6 +19,9 @@ class MapController {
         this.overlays = [];
         this.isInitialized = false;
         this.initializationPromise = null;
+        // 座標や状態は訳した文字列ではなく {key, params} で覚える。
+        this.statusMessage = null;
+        this.popupOptions = {};
     }
 
     /**
@@ -61,7 +64,7 @@ class MapController {
             // 解析結果を表示したあとで呼ぶ。非表示コンテナのポーリングはしない。
             const container = document.getElementById(containerId);
             if (!container || !container.getBoundingClientRect().height) {
-                throw new Error('地図の表示領域がありません');
+                throw new Error('The map container has no visible area');
             }
 
             // 地図を作成
@@ -98,13 +101,13 @@ class MapController {
             this.safeInvalidateSize();
 
         } catch (error) {
-            console.error('地図を初期化できませんでした');
+            console.error('WhereShot: failed to initialize the map');
             this.isInitialized = false;
             this.initializationPromise = null;
 
             // 初期化失敗イベントを発火
             this.dispatchEvent('mapInitializationFailed', {
-                error: '地図を初期化できませんでした',
+                error: 'failed to initialize the map',
                 containerId: containerId
             });
 
@@ -257,12 +260,14 @@ class MapController {
                     this.map.removeLayer(this.accuracyCircle);
                     this.accuracyCircle = null;
                 }
+                this.popupOptions = {};
                 this.currentMarker.setPopupContent(this.createLocationPopup(position.lat, position.lng, {}));
                 this.updateCoordinateDisplay(position.lat, position.lng);
                 this.dispatchEvent('locationChanged', this.currentLocation);
             });
 
-            // ポップアップを設定
+            // ポップアップを設定（言語切り替えで作り直すため条件を保持する）
+            this.popupOptions = { accuracy: options.accuracy };
             const popupContent = this.createLocationPopup(latitude, longitude, options);
             this.currentMarker.bindPopup(popupContent);
 
@@ -274,7 +279,7 @@ class MapController {
 
 
         } catch (error) {
-            console.error('地図に位置を表示できませんでした');
+            console.error('WhereShot: failed to show the location on the map');
             throw error;
         }
     }
@@ -301,7 +306,7 @@ class MapController {
                 opacity: 0.8
             }).addTo(this.map);
 
-            this.accuracyCircle.bindTooltip(`GPS精度: ±${accuracy.toFixed(1)}m`);
+            this.accuracyCircle.bindTooltip(window.I18n.t('map.accuracy', { value: accuracy.toFixed(1) }));
         }
     }
 
@@ -312,7 +317,7 @@ class MapController {
      */
     setDirection(endLat, endLng) {
         if (!this.currentLocation || !WhereShotLogic.isValidLatLng(endLat, endLng)) {
-            window.WhereShotUtils.UIUtils.showError('先に撮影位置を設定してください');
+            window.WhereShotUtils.UIUtils.showError('map.needLocation');
             return;
         }
         const { latitude, longitude } = this.currentLocation;
@@ -386,7 +391,7 @@ class MapController {
         this.isDirectionMode = enabled;
         if (enabled) {
             this.isManualLocationMode = false;
-            window.WhereShotUtils.UIUtils.showSuccess('地図をクリックして撮影方向を設定してください');
+            window.WhereShotUtils.UIUtils.showSuccess('map.clickForDirection');
         } else {
             this.clearDirection();
             this.dispatchEvent('directionChanged', { direction: null, source: null });
@@ -401,7 +406,7 @@ class MapController {
         this.isManualLocationMode = enabled;
         if (enabled) {
             this.isDirectionMode = false;
-            window.WhereShotUtils.UIUtils.showSuccess('地図をクリックして撮影位置を指定してください');
+            window.WhereShotUtils.UIUtils.showSuccess('map.clickForLocation');
         }
         this.updateModeControls();
     }
@@ -470,14 +475,15 @@ class MapController {
         const root = document.createElement('div');
         root.className = 'location-popup';
         const heading = document.createElement('h3');
-        heading.textContent = '📍 撮影位置';
+        heading.dataset.i18n = 'map.popupTitle';
+        heading.textContent = window.I18n.t('map.popupTitle');
         const coordinates = document.createElement('p');
         coordinates.textContent = latitude.toFixed(6) + ', ' + longitude.toFixed(6)
             + '\n' + WhereShotLogic.decimalToDms(latitude, true) + ', ' + WhereShotLogic.decimalToDms(longitude, false);
         root.append(heading, coordinates);
         if (Number.isFinite(options.accuracy)) {
             const accuracy = document.createElement('p');
-            accuracy.textContent = 'GPS精度: ±' + options.accuracy.toFixed(1) + 'm';
+            accuracy.textContent = window.I18n.t('map.accuracy', { value: options.accuracy.toFixed(1) });
             root.append(accuracy);
         }
         const actions = document.createElement('div');
@@ -485,7 +491,8 @@ class MapController {
         const copy = document.createElement('button');
         copy.type = 'button';
         copy.className = 'btn btn-link';
-        copy.textContent = '座標をコピー';
+        copy.dataset.i18n = 'map.popupCopy';
+        copy.textContent = window.I18n.t('map.popupCopy');
         copy.addEventListener('click', () => this.copyCoordinates(latitude, longitude));
         actions.append(copy);
         root.append(actions);
@@ -498,11 +505,11 @@ class MapController {
      */
     async copyCoordinates(latitude, longitude) {
         try {
-            if (!navigator.clipboard?.writeText) throw new Error('コピー非対応');
+            if (!navigator.clipboard?.writeText) throw new Error('clipboard is unavailable');
             await navigator.clipboard.writeText(latitude.toFixed(6) + ', ' + longitude.toFixed(6));
-            window.WhereShotUtils.UIUtils.showSuccess('座標をコピーしました');
+            window.WhereShotUtils.UIUtils.showSuccess('map.copied');
         } catch {
-            window.WhereShotUtils.UIUtils.showError('コピーできませんでした。座標を選択してコピーしてください');
+            window.WhereShotUtils.UIUtils.showError('map.copyFailed');
         }
     }
     /**
@@ -511,9 +518,45 @@ class MapController {
      * @param {number} longitude - 経度
      */
     updateCoordinateDisplay(latitude, longitude) {
-        const coordElement = document.getElementById('map-coordinates');
-        if (coordElement) {
-            coordElement.textContent = `座標: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+        this.setStatusMessage({
+            key: 'map.coordinates',
+            params: { lat: latitude.toFixed(6), lng: longitude.toFixed(6) },
+        });
+    }
+
+    /**
+     * 地図の下に出す文言を {key, params} で保持して描く
+     * @param {object} message - {key, params}
+     */
+    setStatusMessage(message) {
+        this.statusMessage = message;
+        this.renderStatusMessage();
+    }
+
+    /**
+     * 保持している状態を現在の言語で描き直す
+     */
+    renderStatusMessage() {
+        const element = document.getElementById('map-coordinates');
+        if (element) element.textContent = window.I18n.message(this.statusMessage);
+    }
+
+    /**
+     * 言語切り替え時に、状態表示と開いているポップアップを作り直す
+     */
+    renderLanguage() {
+        this.renderStatusMessage();
+        if (this.currentMarker && this.currentLocation) {
+            const { latitude, longitude } = this.currentLocation;
+            this.currentMarker.setPopupContent(
+                this.createLocationPopup(latitude, longitude, this.popupOptions)
+            );
+        }
+        if (this.accuracyCircle && Number.isFinite(this.popupOptions.accuracy)) {
+            this.accuracyCircle.unbindTooltip();
+            this.accuracyCircle.bindTooltip(
+                window.I18n.t('map.accuracy', { value: this.popupOptions.accuracy.toFixed(1) })
+            );
         }
     }
 
@@ -552,6 +595,7 @@ class MapController {
         this.isDirectionMode = false;
 
         this.isManualLocationMode = false;
+        this.popupOptions = {};
         this.updateModeControls();
     }
 

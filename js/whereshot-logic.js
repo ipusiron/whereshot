@@ -73,15 +73,14 @@ const WhereShotLogic = (() => {
     };
   }
 
-  function formatWall(w, offsetMin = null) {
-    if (!isValidWall(w)) return '不明';
-    const base = `${w.year}/${pad(w.month)}/${pad(w.day)} ${pad(w.hour)}:${pad(w.minute)}:${pad(w.second)}`;
-    return offsetMin === null ? base : `${base}（UTC${formatOffset(offsetMin)}）`;
+  function formatWall(w) {
+    if (!isValidWall(w)) return '';
+    return `${w.year}/${pad(w.month)}/${pad(w.day)} ${pad(w.hour)}:${pad(w.minute)}:${pad(w.second)}`;
   }
 
   function formatUtc(ms) {
     const w = utcMsToWall(ms, 0);
-    if (!w) return '不明';
+    if (!w) return '';
     return `${w.year}-${pad(w.month)}-${pad(w.day)} ${pad(w.hour)}:${pad(w.minute)}:${pad(w.second)} UTC`;
   }
 
@@ -173,12 +172,16 @@ const WhereShotLogic = (() => {
     return { lat: deg(p2), lng: ((deg(l2) + 540) % 360) - 180 };
   }
 
-  const CARDINALS_JA = [
-    '北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東',
-    '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西',
+  const CARDINAL_KEYS = [
+    'cardinal.n', 'cardinal.nne', 'cardinal.ne', 'cardinal.ene',
+    'cardinal.e', 'cardinal.ese', 'cardinal.se', 'cardinal.sse',
+    'cardinal.s', 'cardinal.ssw', 'cardinal.sw', 'cardinal.wsw',
+    'cardinal.w', 'cardinal.wnw', 'cardinal.nw', 'cardinal.nnw',
   ];
-  function toCardinalJa(d) {
-    return Number.isFinite(d) ? CARDINALS_JA[Math.round(normalizeDegrees(d) / 22.5) % 16] : '不明';
+  /** 真北0°・時計回りの角度から16方位のメッセージキーを返す。語は辞書が持つ。 */
+  function cardinalKey(d) {
+    return Number.isFinite(d)
+      ? CARDINAL_KEYS[Math.round(normalizeDegrees(d) / 22.5) % 16] : 'cardinal.unknown';
   }
 
   function decimalToDms(value, isLat) {
@@ -252,11 +255,10 @@ const WhereShotLogic = (() => {
   }
 
   // ========== 太陽位置・影 ==========
-  const PHASE_JA = {
-    night: '夜間', dawn: '明け方（薄明）', dusk: '夕暮れ（薄明）',
-    'golden-morning': '朝のゴールデンアワー', 'golden-evening': '夕方のゴールデンアワー',
-    morning: '午前', afternoon: '午後',
-  };
+  const PHASE_KEYS = [
+    'night', 'dawn', 'dusk', 'golden-morning', 'golden-evening', 'morning', 'afternoon',
+  ];
+  const phaseKey = (phase) => (PHASE_KEYS.includes(phase) ? 'phase.' + phase : 'report.unknown');
   function sunPhaseKey(altDeg, azDeg) {
     const east = azDeg < 180;
     if (altDeg < -6) return 'night';
@@ -350,15 +352,18 @@ const WhereShotLogic = (() => {
   }
 
   // ========== 複数のソースから日時を推定 ==========
-  const SOURCE_LABEL = {
-    exif_original: 'Exif撮影日時', gps_utc: 'GPS時刻（UTC）', exif_digitized: 'Exifデジタル化日時',
-    exif_modified: 'Exif更新日時', filename: 'ファイル名', file_modified: 'ファイル更新日時',
+  const SOURCE_KEYS = {
+    exif_original: 'source.exif_original', gps_utc: 'source.gps_utc',
+    exif_digitized: 'source.exif_digitized', exif_modified: 'source.exif_modified',
+    filename: 'source.filename', file_modified: 'source.file_modified',
   };
   function estimateDateTime(input = {}) {
     const { exif: givenExif, fileName = '', lastModifiedMs, offsetMin = 0, nowMs } = input || {};
     const exif = givenExif || {};
     const sources = [];
-    const push = (type, data) => sources.push({ type, label: SOURCE_LABEL[type], ...data });
+    const push = (type, data) => sources.push({
+      type, label: { key: SOURCE_KEYS[type], params: {} }, ...data,
+    });
     for (const [key, type, reliability] of [
       ['dateTimeOriginal', 'exif_original', 0.95], ['dateTimeDigitized', 'exif_digitized', 0.85],
       ['dateTime', 'exif_modified', 0.5],
@@ -368,7 +373,7 @@ const WhereShotLogic = (() => {
     }
     if (Number.isFinite(exif.gpsUtcMs)) push('gps_utc', { utcMs: exif.gpsUtcMs, hasTime: true, reliability: 0.9 });
     for (const f of extractDatesFromFilename(fileName, nowMs)) {
-      push('filename', { ...f, label: `ファイル名（${f.matched}）` });
+      push('filename', { ...f, label: { key: 'source.filenameMatched', params: { matched: f.matched } } });
     }
     if (Number.isFinite(lastModifiedMs)) push('file_modified', { utcMs: lastModifiedMs, hasTime: true, reliability: 0.3 });
     for (const source of sources) {
@@ -464,69 +469,97 @@ const WhereShotLogic = (() => {
   function formatCamera(make, model) {
     const safeMake = cleanText(make);
     const safeModel = cleanText(model);
-    if (!safeMake && !safeModel) return '不明';
+    if (!safeMake && !safeModel) return null;
     if (!safeMake) return safeModel;
     if (!safeModel) return safeMake;
     return safeModel.toLowerCase().includes(safeMake.toLowerCase()) ? safeModel : `${safeMake} ${safeModel}`;
   }
 
   // ========== レポート（作成時刻も呼び出し側が指定） ==========
-  const OFFSET_SOURCE_JA = {
-    exif: 'ExifのOffsetTimeOriginal', gps: 'GPS時刻との差から推定',
-    browser: 'ブラウザーのタイムゾーン（要確認）', manual: '手動で指定',
+  const OFFSET_SOURCE_KEYS = {
+    exif: 'report.offsetExif', gps: 'report.offsetGps',
+    browser: 'report.offsetBrowser', manual: 'report.offsetManual',
   };
-  const LOCATION_SOURCE_JA = { exif: 'ExifのGPS', manual: '地図で手動指定' };
+  const LOCATION_SOURCE_KEYS = { exif: 'report.locationExif', manual: 'report.locationManual' };
   function formatInt(n) {
     return Number.isFinite(n) ? String(Math.trunc(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0';
   }
 
+  const msg = (key, params = {}) => ({ key, params });
+
+  /**
+   * 行ごとに {key, params} を返す。文言は持たず、表示の直前に訳す。
+   * paramsの値が {key, params} 形なら、表示側が入れ子のまま訳す。
+   */
   function buildReport(input) {
     const d = input && typeof input === 'object' ? input : {};
-    const lines = ['WhereShot 解析レポート'];
-    lines.push(`ファイル: ${d.fileName || '不明'}（${formatInt(d.fileSize)} バイト、${d.fileType || '種類不明'}）`);
-    lines.push(`SHA-256: ${d.sha256 || '未計算'}`);
+    const unknown = msg('report.unknown');
+    const lines = [msg('report.title')];
+    lines.push(msg('report.file', {
+      name: d.fileName || unknown, size: formatInt(d.fileSize),
+      type: d.fileType || msg('report.typeUnknown'),
+    }));
+    lines.push(msg('report.sha256', { value: d.sha256 || msg('report.notCalculated') }));
     if (isValidWall(d.wall) && validOffset(d.offsetMin)) {
-      lines.push(`撮影日時（現地）: ${formatWall(d.wall, d.offsetMin)}`);
-      lines.push(`撮影日時（UTC）: ${formatUtc(wallToUtcMs(d.wall, d.offsetMin))}`);
-      const residual = d.offsetSource === 'gps' && Number.isFinite(d.residualSec) ? `（残差 ${d.residualSec} 秒）` : '';
-      lines.push(`UTCオフセットの根拠: ${OFFSET_SOURCE_JA[d.offsetSource] || '不明'}${residual}`);
-      lines.push(`日時の根拠: ${d.dateSourceLabel || '不明'}（整合度 ${Math.round((d.confidence || 0) * 100)}%）`);
+      lines.push(msg('report.localTime', {
+        value: msg('time.withOffset', { time: formatWall(d.wall), offset: formatOffset(d.offsetMin) }),
+      }));
+      lines.push(msg('report.utcTime', { value: formatUtc(wallToUtcMs(d.wall, d.offsetMin)) || unknown }));
+      const residual = d.offsetSource === 'gps' && Number.isFinite(d.residualSec)
+        ? msg('report.residual', { seconds: d.residualSec }) : '';
+      lines.push(msg('report.offsetBasis', {
+        source: msg(OFFSET_SOURCE_KEYS[d.offsetSource] || 'report.unknown'), residual,
+      }));
+      lines.push(msg('report.dateBasis', {
+        source: d.dateSource || unknown, percent: Math.round((d.confidence || 0) * 100),
+      }));
     } else {
-      lines.push('撮影日時: 不明');
+      lines.push(msg('report.timeUnknown'));
     }
     if (isValidLatLng(d.latitude, d.longitude)) {
-      const coordinates = `${d.latitude.toFixed(6)}, ${d.longitude.toFixed(6)}`;
-      lines.push(`位置: ${coordinates}（${decimalToDms(d.latitude, true)}, ${decimalToDms(d.longitude, false)}）`);
-      lines.push(`位置の根拠: ${LOCATION_SOURCE_JA[d.locationSource] || '不明'}`);
+      lines.push(msg('report.location', {
+        decimal: `${d.latitude.toFixed(6)}, ${d.longitude.toFixed(6)}`,
+        dms: `${decimalToDms(d.latitude, true)}, ${decimalToDms(d.longitude, false)}`,
+      }));
+      lines.push(msg('report.locationBasis', {
+        source: msg(LOCATION_SOURCE_KEYS[d.locationSource] || 'report.unknown'),
+      }));
     } else {
-      lines.push('位置: 不明');
+      lines.push(msg('report.locationUnknown'));
     }
     lines.push(Number.isFinite(d.directionDeg)
-      ? `撮影方位: ${d.directionDeg.toFixed(1)}°（${toCardinalJa(d.directionDeg)}）` : '撮影方位: 記録なし');
+      ? msg('report.direction', {
+        deg: d.directionDeg.toFixed(1), cardinal: msg(cardinalKey(d.directionDeg)),
+      })
+      : msg('report.directionNone'));
     if (d.sun && Number.isFinite(d.sun.altitudeDeg) && Number.isFinite(d.sun.azimuthDeg)) {
       const sun = d.sun;
-      const position = `高度 ${sun.altitudeDeg.toFixed(1)}°、方位 ${sun.azimuthDeg.toFixed(1)}°（${toCardinalJa(sun.azimuthDeg)}）`;
-      lines.push(`太陽: ${position}、${PHASE_JA[sun.phase] || '不明'}`);
-      if (Number.isFinite(sun.shadowDirectionDeg) && Number.isFinite(sun.shadowRatio)) {
-        const direction = `${sun.shadowDirectionDeg.toFixed(1)}°（${toCardinalJa(sun.shadowDirectionDeg)}）`;
-        lines.push(`影: ${direction}方向、長さは高さの ${sun.shadowRatio.toFixed(2)} 倍`);
-      } else {
-        lines.push('影: なし（太陽が地平線の下）');
-      }
+      lines.push(msg('report.sun', {
+        altitude: sun.altitudeDeg.toFixed(1), azimuth: sun.azimuthDeg.toFixed(1),
+        cardinal: msg(cardinalKey(sun.azimuthDeg)), phase: msg(phaseKey(sun.phase)),
+      }));
+      lines.push(Number.isFinite(sun.shadowDirectionDeg) && Number.isFinite(sun.shadowRatio)
+        ? msg('report.shadow', {
+          deg: sun.shadowDirectionDeg.toFixed(1), cardinal: msg(cardinalKey(sun.shadowDirectionDeg)),
+          ratio: sun.shadowRatio.toFixed(2),
+        })
+        : msg('report.shadowNone'));
     }
-    if (d.station) lines.push(`最寄りの気象庁観測所: ${d.station}（約 ${d.stationKm} km）`);
-    lines.push(`レポート作成: ${formatUtc(d.generatedAtUtcMs)}`);
-    lines.push('注意: Exif・ファイル名・更新日時は書き換えられる。この結果だけで撮影の事実を断定しないこと。');
-    return lines.join('\n');
+    if (d.station) lines.push(msg('report.station', { name: d.station, km: d.stationKm }));
+    lines.push(msg('report.generated', { value: formatUtc(d.generatedAtUtcMs) || unknown }));
+    lines.push(msg('report.caution'));
+    return lines;
   }
 
   return {
     isValidWall, parseExifDateTime, parseOffset, formatOffset, wallToUtcMs, utcMsToWall,
     formatWall, formatUtc, wallToInputValue, inputValueToWall, gpsDateTimeToUtcMs,
     inferOffsetFromGps, longitudeOffsetHint, decideOffset, OFFSET_CHOICES,
-    isValidLatLng, distanceM, bearing, destinationPoint, toCardinalJa, decimalToDms, nearestStation,
+    isValidLatLng, distanceM, bearing, destinationPoint, cardinalKey, CARDINAL_KEYS,
+    decimalToDms, nearestStation,
     nasaWorldviewUrl, sunCalcOrgUrl, gsiMapUrl, streetViewUrl, jmaHourlyUrl, JMA_TOP,
-    sunPhaseKey, sunReport, PHASE_JA, FILENAME_PATTERNS, SOURCE_LABEL,
+    sunPhaseKey, sunReport, PHASE_KEYS, phaseKey, FILENAME_PATTERNS, SOURCE_KEYS,
+    OFFSET_SOURCE_KEYS, LOCATION_SOURCE_KEYS, msg,
     extractDatesFromFilename, estimateDateTime, normalizeTags, formatExposure, formatCamera,
     buildReport, formatInt,
   };

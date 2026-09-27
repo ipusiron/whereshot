@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { L, SunCalc } = require('./fixtures/sample.cjs');
+const { L, I18n, SunCalc } = require('./fixtures/sample.cjs');
 
 const cases = [
   [34.28611372222222, 133.79983519444446, 1469324037000, '64.0', '117.3', 'morning', '297.3', '0.49'],
@@ -23,9 +23,16 @@ for (const [lat, lng, time, altitude, azimuth, phase, shadow, ratio] of cases) {
     if (ratio !== undefined) assert.equal(r.shadowRatio?.toFixed(2) ?? null, ratio);
   });
 }
-test('D-6 日本語16方位と時間帯の境界', () => {
+test('D-6 16方位のキーと時間帯の境界', () => {
   for (const [angle, name] of [[0, '北'], [11.24, '北'], [11.26, '北北東'], [90, '東'], [180, '南'],
-    [270, '西'], [348.74, '北北西'], [348.76, '北'], [360, '北'], [-90, '西']]) assert.equal(L.toCardinalJa(angle), name);
+    [270, '西'], [348.74, '北北西'], [348.76, '北'], [360, '北'], [-90, '西']]) {
+    assert.equal(I18n.tIn('ja', L.cardinalKey(angle)), name);
+  }
+  for (const [angle, name] of [[0, 'N'], [11.26, 'NNE'], [90, 'E'], [180, 'S'], [270, 'W']]) {
+    assert.equal(I18n.tIn('en', L.cardinalKey(angle)), name);
+  }
+  assert.equal(L.cardinalKey(NaN), 'cardinal.unknown');
+  assert.equal(L.CARDINAL_KEYS.length, 16);
   assert.equal(L.sunPhaseKey(-6.01, 90), 'night');
   assert.equal(L.sunPhaseKey(-6, 90), 'dawn');
   assert.equal(L.sunPhaseKey(-0.833, 90), 'golden-morning');

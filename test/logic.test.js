@@ -1,7 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const S = require('./fixtures/sample.cjs');
-const { L, wall: W, exif, nowMs, stations, latitude: lat, longitude: lng, reportInput } = S;
+const { L, I18n, wall: W, exif, nowMs, stations, latitude: lat, longitude: lng, reportInput } = S;
+const withOffset = (wall, offsetMin, lang = 'ja') => I18n.tIn(lang, 'time.withOffset', {
+  time: L.formatWall(wall), offset: L.formatOffset(offsetMin),
+});
 
 test('A-6 壁時計・オフセット・UTCの厳密な変換', () => {
   assert.deepEqual(L.parseExifDateTime('2016:07:24 10:33:57'), W);
@@ -19,9 +22,13 @@ test('A-6 壁時計・オフセット・UTCの厳密な変換', () => {
   assert.equal(L.wallToUtcMs(W, 540), 1469324037000);
   assert.equal(L.formatUtc(1469324037000), '2016-07-24 01:33:57 UTC');
   assert.deepEqual(L.utcMsToWall(1469324037000, 540), W);
-  assert.equal(L.formatWall(L.utcMsToWall(1469324037000, 120), 120), '2016/07/24 03:33:57（UTC+02:00）');
-  assert.equal(L.formatWall(W, 540), '2016/07/24 10:33:57（UTC+09:00）');
-  assert.equal(L.formatWall(W, null), '2016/07/24 10:33:57');
+  assert.equal(withOffset(L.utcMsToWall(1469324037000, 120), 120), '2016/07/24 03:33:57（UTC+02:00）');
+  assert.equal(withOffset(W, 540), '2016/07/24 10:33:57（UTC+09:00）');
+  assert.equal(withOffset(W, 540, 'en'), '2016/07/24 10:33:57 (UTC+09:00)');
+  assert.equal(L.formatWall(W), '2016/07/24 10:33:57');
+  // 文言を持たないので、不正な入力は空文字にする（表示側が time.unknown を出す）。
+  assert.equal(L.formatWall(null), '');
+  assert.equal(L.formatUtc(NaN), '');
   assert.equal(L.wallToInputValue(W), '2016-07-24T10:33:57');
   assert.deepEqual(L.inputValueToWall('2016-07-24T10:33'), { ...W, second: 0 });
   assert.equal(L.inputValueToWall('2016-13-24T10:33'), null);
@@ -86,7 +93,7 @@ for (const [name, pattern, matched, formatted, hasTime] of filenameCases) {
     assert.equal(r.pattern, pattern);
     assert.equal(r.matched, matched);
     assert.equal(r.hasTime, hasTime);
-    assert.equal(r.wall ? L.formatWall(r.wall, null) : L.formatUtc(r.utcMs), formatted);
+    assert.equal(r.wall ? L.formatWall(r.wall) : L.formatUtc(r.utcMs), formatted);
     const reliability = !hasTime ? 0.4 : pattern.startsWith('unix') ? 0.5 : pattern === 'ymdhms-14' ? 0.55 : 0.6;
     assert.equal(r.reliability, reliability);
   });
@@ -131,7 +138,12 @@ test('C-4 推定の順位、整合度、更新日時の注記', () => {
   assert.deepEqual(edited.notes.map((n) => n.type), ['exif_modified']);
   assert.equal(estimate({ exif: { dateTime: '2016:08:01 09:00:00' }, fileName: 'IMG_20160724_103357.jpg' }).best.type, 'filename');
   const pxl = estimate({ fileName: 'PXL_20240101_033456789.jpg' });
-  assert.equal(L.formatWall(L.utcMsToWall(pxl.estimatedUtcMs, 540), 540), '2024/01/01 12:34:56（UTC+09:00）');
+  assert.equal(withOffset(L.utcMsToWall(pxl.estimatedUtcMs, 540), 540), '2024/01/01 12:34:56（UTC+09:00）');
+  // ソースのラベルは訳した文字列ではなく {key, params} で持ち回る。
+  assert.deepEqual(result.sources.map((s) => s.label.key), ['source.exif_original', 'source.gps_utc',
+    'source.exif_digitized', 'source.filenameMatched', 'source.exif_modified', 'source.file_modified']);
+  assert.deepEqual(result.sources[3].label.params, { matched: '2016-07-24 10.33.57' });
+  assert.equal(I18n.message(result.sources[3].label, 'en'), 'File name (2016-07-24 10.33.57)');
   const empty = estimate({ fileName: 'photo.jpg', lastModifiedMs: null });
   assert.equal(empty.best, null);
   assert.equal(empty.confidence, 0);
@@ -188,6 +200,24 @@ test('F-6 外部リンクは撮影地の日付と安全な座標を使う', () =
 });
 
 test('G-4 レポートの15行と最小入力の8行', () => {
+  const expectedEn = [
+    'WhereShot analysis report',
+    'File: 2016-07-24 10.33.57.jpg (3,571,592 bytes, image/jpeg)',
+    'SHA-256: a08e3c4742a0a910e2df04a71f0b165fd87281695a26ac7fe5056a15752aaff8',
+    'Capture time (local): 2016/07/24 10:33:57 (UTC+09:00)',
+    'Capture time (UTC): 2016-07-24 01:33:57 UTC',
+    'Basis of the UTC offset: inferred from the gap with the GPS time (residual -1 s)',
+    'Basis of the date and time: Exif capture time (consistency 95%)',
+    `Position: 34.286114, 133.799835 (34°17'10.01"N, 133°47'59.41"E)`,
+    'Basis of the position: the Exif GPS tags',
+    'Camera bearing: not recorded',
+    'Sun: altitude 64.0°, azimuth 117.3° (ESE), Morning',
+    'Shadow: toward 297.3° (WNW), 0.49 times the height',
+    'Nearest JMA station: 高松 (about 23 km)',
+    'Report generated: 2026-09-20 00:00:00 UTC',
+    'Caution: Exif, file names and modification times can be rewritten. '
+      + 'Do not treat this result alone as proof of the capture.',
+  ];
   const expected = [
     'WhereShot 解析レポート',
     'ファイル: 2016-07-24 10.33.57.jpg（3,571,592 バイト、image/jpeg）',
@@ -206,13 +236,19 @@ test('G-4 レポートの15行と最小入力の8行', () => {
     '注意: Exif・ファイル名・更新日時は書き換えられる。この結果だけで撮影の事実を断定しないこと。',
   ];
   assert.equal(expected.length, 15);
-  assert.equal(L.buildReport(reportInput), expected.join('\n'));
+  // 純ロジックは {key, params} の配列を返し、表示の直前に訳す。
+  const report = L.buildReport(reportInput);
+  assert.ok(report.every((line) => typeof line.key === 'string' && typeof line.params === 'object'));
+  assert.equal(I18n.messages(report, 'ja'), expected.join('\n'));
+  assert.equal(I18n.messages(report, 'en'), expectedEn.join('\n'));
   const minimal = { fileName: 'photo.png', fileSize: 72, fileType: '', sha256: null, wall: null,
     latitude: null, longitude: null, directionDeg: 271.26, sun: null, station: null, generatedAtUtcMs: nowMs };
-  assert.equal(L.buildReport(minimal), [
+  assert.equal(I18n.messages(L.buildReport(minimal), 'ja'), [
     'WhereShot 解析レポート', 'ファイル: photo.png（72 バイト、種類不明）', 'SHA-256: 未計算',
     '撮影日時: 不明', '位置: 不明', '撮影方位: 271.3°（西）', 'レポート作成: 2026-09-20 00:00:00 UTC', expected.at(-1),
   ].join('\n'));
+  assert.equal(I18n.messages(L.buildReport(minimal), 'en').split('\n')[1],
+    'File: photo.png (72 bytes, type unknown)');
 });
 
 test('H-8 不正入力は例外にしない', () => {

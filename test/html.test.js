@@ -35,7 +35,8 @@ test('H-4 古典スクリプトをdefer付きで指定順に読み込む', () =>
   const tags = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
   const expected = [
     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
-    'vendor/exifreader/exif-reader.min.js', 'vendor/suncalc/suncalc.js', 'data/stations.js',
+    'vendor/exifreader/exif-reader.min.js', 'vendor/suncalc/suncalc.js',
+    'js/i18n.js', 'data/stations.js',
     'js/whereshot-logic.js', 'js/utils.js', 'js/exif-parser.js', 'js/sun-calculator.js',
     'js/map-controller.js', 'js/main.js',
   ];
@@ -59,6 +60,7 @@ test('J ラベル・見出し・状態通知・ネイティブダイアログ', 
   }
   assert.match(html, /<input[^>]*id="analysis-date"[^>]*step="1"/);
   assert.match(html, /<dialog id="help-dialog"[^>]*aria-labelledby="help-title"/);
+  assert.match(html, /<button[^>]*class="modal-close"[^>]*data-i18n-aria-label="help.close"/);
   assert.match(html, /<button[^>]*class="modal-close"[^>]*aria-label="閉じる"/);
   const drop = html.match(/<div id="drop-zone"[^>]*>/)[0];
   assert.doesNotMatch(drop, /role=|tabindex=/);
@@ -90,6 +92,8 @@ test('H・I DOMの安全な描画とロジックの環境非依存性', () => {
   }
   const logic = fs.readFileSync(path.join(root, 'js/whereshot-logic.js'), 'utf8');
   const forbidden = /document|window|navigator|fetch\(|crypto|localStorage|Date\.now|console\.|getHours|getMinutes|getSeconds/;
+  // 言語の保存はi18n.jsに閉じ込める（純ロジックはDOMもストレージも触らない）。
+  assert.match(fs.readFileSync(path.join(root, 'js/i18n.js'), 'utf8'), /localStorage/);
   assert.doesNotMatch(logic, forbidden);
   assert.doesNotMatch(logic, /getDate\(|getMonth|getFullYear|getDay\(|getTimezoneOffset|toLocale/);
   assert.doesNotMatch(logic, /new Date\(\s*[A-Za-z_$][\w$.]*\s*,/);

@@ -35,7 +35,7 @@ const FileUtils = {
   /**
    * ファイルの安全性チェック
    * @param {File} file - チェックするファイル
-   * @returns {object} チェック結果
+   * @returns {object} isValidと、メッセージキーの配列
    */
   validateFile: (file) => {
     const maxSize = 100 * 1024 * 1024; // 100MB
@@ -50,14 +50,12 @@ const FileUtils = {
 
     if (file.size > maxSize) {
       result.isValid = false;
-      result.errors.push(
-        'ファイルサイズが大きすぎます（100MB以下にしてください）'
-      );
+      result.errors.push('error.fileTooLarge');
     }
 
     if (!allowedTypes.includes(file.type)) {
       result.isValid = false;
-      result.errors.push('サポートされていないファイル形式です');
+      result.errors.push('error.unsupportedType');
     }
 
     return result;
@@ -80,41 +78,56 @@ const UIUtils = {
   },
 
   /**
-   * エラーメッセージを表示
-   * @param {string} message - エラーメッセージ
+   * トーストを表示する。訳した文字列ではなくキーを覚えるので、
+   * 表示中に言語を切り替えても訳し直される。
+   * @param {string} variant - 'error' または 'success'
+   * @param {string} key - メッセージキー
+   * @param {object} params - 差し込み値
    * @param {number} duration - 表示時間（ミリ秒）
    */
-  showError: (message, duration = 5000) => {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'toast toast--error';
-    errorDiv.textContent = message;
+  showToast: (variant, key, params = {}, duration = 3000) => {
+    const toast = document.createElement('div');
+    toast.className = 'toast toast--' + variant;
+    toast.dataset.toastKey = key;
+    toast.dataset.toastParams = JSON.stringify(params);
+    toast.textContent = window.I18n.t(key, params);
 
-    document.getElementById('toast-region').appendChild(errorDiv);
+    document.getElementById('toast-region').appendChild(toast);
 
     setTimeout(() => {
-      if (errorDiv.parentNode) {
-        errorDiv.parentNode.removeChild(errorDiv);
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
       }
     }, duration);
   },
 
   /**
-   * 成功メッセージを表示
-   * @param {string} message - 成功メッセージ
-   * @param {number} duration - 表示時間（ミリ秒）
+   * エラーメッセージを表示
+   * @param {string} key - メッセージキー
+   * @param {object} params - 差し込み値
    */
-  showSuccess: (message, duration = 3000) => {
-    const successDiv = document.createElement('div');
-    successDiv.className = 'toast toast--success';
-    successDiv.textContent = message;
+  showError: (key, params = {}) => UIUtils.showToast('error', key, params, 5000),
 
-    document.getElementById('toast-region').appendChild(successDiv);
+  /**
+   * 成功メッセージを表示
+   * @param {string} key - メッセージキー
+   * @param {object} params - 差し込み値
+   */
+  showSuccess: (key, params = {}) => UIUtils.showToast('success', key, params, 3000),
 
-    setTimeout(() => {
-      if (successDiv.parentNode) {
-        successDiv.parentNode.removeChild(successDiv);
+  /**
+   * 表示中のトーストを現在の言語で描き直す
+   */
+  retranslateToasts: () => {
+    for (const toast of document.querySelectorAll('#toast-region [data-toast-key]')) {
+      let params = {};
+      try {
+        params = JSON.parse(toast.dataset.toastParams || '{}');
+      } catch {
+        params = {};
       }
-    }, duration);
+      toast.textContent = window.I18n.t(toast.dataset.toastKey, params);
+    }
   },
 
   /**
