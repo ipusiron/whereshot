@@ -41,6 +41,8 @@ hub: true
 
 # WhereShot - 撮影時刻・場所解析ツール
 
+[English](README.en.md) · 日本語
+
 ![GitHub Repo stars](https://img.shields.io/github/stars/ipusiron/whereshot?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/ipusiron/whereshot?style=social)
 ![GitHub last commit](https://img.shields.io/github/last-commit/ipusiron/whereshot)
@@ -75,6 +77,12 @@ Exifがない画像も、日時と位置を手動で補って検討できます�
 - ExifReaderによる撮影日時、GPS座標、カメラ設定、レンズ情報の抽出
 - UTCオフセットの根拠と日時ソースの整合度の表示
 - ファイルのSHA-256と解析レポートのコピー
+
+### 🌐 日本語・英語の切り替え
+
+- ヘッダーのボタンで、画面・通知・解析レポートの全文を日本語と英語で切り替える
+- `?lang=ja` / `?lang=en` での指定、保存した選択、ブラウザーの言語の順に決める
+- 16方位・時間帯・日時ソースの名前も、解析結果を保ったまま訳し直す
 
 ### 🗺️ 地理空間分析
 - **インタラクティブマップ**: Leafletによる地図表示
@@ -204,10 +212,11 @@ HEIC/HEIFなどをブラウザーが表示できない場合も、プレビュ�
 | Exif | ExifReader 4.12.0（自己ホスト） |
 | 太陽位置 | SunCalc 1.9.0（自己ホスト） |
 | 地図 | Leaflet 1.9.4（CDN＋SRI）、3種類のタイル |
-| 純粋ロジック | js/whereshot-logic.js（DOM・タイムゾーン非依存） |
+| 純粋ロジック | js/whereshot-logic.js（DOM・タイムゾーン非依存、文言を持たない） |
+| 文言 | js/i18n.js（日英の辞書とDOMへの適用） |
 | 観測所 | stations.jsonと同じ54件をstations.jsで読み込む |
 
-太陽の方位は真北を0°、時計回りにそろえ、16方位を日本語で表示します。
+太陽の方位は真北を0°、時計回りにそろえ、16方位で表示します（日本語は「東南東」、英語は「ESE」）。
 時間帯は高度と方位から決め、白夜・極夜にも対応します。
 影の長さは物体の高さに対する比で、太陽が地平線の下なら影なしとします。
 精度円はGPSHPositioningError（メートル）があるときだけ表示し、無次元のGPSDOPは使いません。
@@ -228,6 +237,7 @@ HEIC/HEIFなどをブラウザーが表示できない場合も、プレビュ�
 
 画像とExifの解析はブラウザー内で行い、画像・Exifを外部に送信しません。
 入力した位置や解析結果、レポートをlocalStorageなどへ保存しません。
+localStorageに保存するのは言語の選択（`whereshot-language`）だけです。
 地図の表示には通信が必要で、撮影地点の周辺を見ていることがタイル配信元に伝わります。
 機微な調査ではVPNなどの利用を検討してください。
 
@@ -275,6 +285,8 @@ npm test
 
 GitHub Actionsがpushとpull_requestで自動実行します。
 READMEの表と例、配色、HTML、配布ライブラリーのサイズとSHA-256も検証します。
+日英の辞書のキー集合と差し込み名の一致、HTMLとスクリプトが使うキーの実在、
+純粋ロジックに和文が残っていないことも検証します。
 子プロセスをUTC・Asia/Tokyo・America/Los_Angeles・Pacific/Kiritimatiで起動し、日時推定・太陽位置・リンク・レポートが完全に一致することを確認します。
 
 ## 🧭 今後の候補
@@ -305,6 +317,7 @@ whereshot/
 ├── index.html                       # 画面とCSP
 ├── css/style.css                    # 不透明なダーク配色とレスポンシブ表示
 ├── js/
+│   ├── i18n.js                       # 日英の辞書とDOMへの適用
 │   ├── whereshot-logic.js            # 環境非依存の計算と書式
 │   ├── utils.js                      # File・UIの補助
 │   ├── exif-parser.js                # FileとExifReaderの接続
@@ -327,6 +340,7 @@ whereshot/
 ├── .nojekyll                         # Pagesで静的ファイルをそのまま配信
 ├── CLAUDE.md                         # 開発規則
 ├── LICENSE                           # MITライセンス
+├── README.en.md                      # 英語版README
 └── README.md                         # 本ファイル
 ```
 

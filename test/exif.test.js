@@ -30,7 +30,8 @@ test('B-8 実画像をExifReaderで読み、平たいメタデータへ正規化
 test('B-8 カメラ名・ExposureTime・空のタグ・Unicode', () => {
   assert.equal(L.formatCamera('JIAYU', 'S3'), 'JIAYU S3');
   assert.equal(L.formatCamera('Canon', 'Canon EOS R5'), 'Canon EOS R5');
-  assert.equal(L.formatCamera(null, null), '不明');
+  // 文言を持たないので、不明はnullで返し、表示側が exif.cameraUnknown を出す。
+  assert.equal(L.formatCamera(null, null), null);
   for (const [v, expected] of [[0.000501, '1/1996s'], [1 / 250, '1/250s'], [2, '2s'], [0.5, '1/2s'], [0, null], [null, null]]) {
     assert.equal(L.formatExposure(v), expected);
   }

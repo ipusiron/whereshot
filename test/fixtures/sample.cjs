@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const L = require('../../js/whereshot-logic');
+const I18n = require('../../js/i18n');
 const ExifReader = require('../../vendor/exifreader/exif-reader.min');
 const SunCalc = require('../../vendor/suncalc/suncalc');
 const stations = require('../../data/stations.json');
@@ -15,8 +16,11 @@ const sha256 = 'a08e3c4742a0a910e2df04a71f0b165fd87281695a26ac7fe5056a15752aaff8
 const sun = L.sunReport(SunCalc, latitude, longitude, utcMs);
 const reportInput = {
   fileName: '2016-07-24 10.33.57.jpg', fileSize: 3571592, fileType: 'image/jpeg', sha256,
-  wall, offsetMin: 540, offsetSource: 'gps', residualSec: -1, dateSourceLabel: 'Exif撮影日時',
+  wall, offsetMin: 540, offsetSource: 'gps', residualSec: -1, dateSource: L.msg('source.exif_original'),
   confidence: 0.95, latitude, longitude, locationSource: 'exif', directionDeg: null, sun,
   station: '高松', stationKm: 23, generatedAtUtcMs: nowMs,
 };
-module.exports = { L, ExifReader, SunCalc, stations, buffer, exif, nowMs, wall, latitude, longitude, utcMs, sha256, sun, reportInput };
+module.exports = {
+  L, I18n, ExifReader, SunCalc, stations, buffer, exif, nowMs, wall,
+  latitude, longitude, utcMs, sha256, sun, reportInput,
+};

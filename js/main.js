@@ -14,6 +14,9 @@ class WhereShotApp {
     this.fileGeneration = 0;
     this.previewUrl = null;
     this.sha256 = null;
+    // 訳した文字列で状態を持たない（言語を切り替えても失わないため）。
+    this.hashState = 'none';
+    this.previewFailed = false;
   }
 
   /**
@@ -28,15 +31,56 @@ class WhereShotApp {
         });
       }
 
+      // 文言を当てる前に言語を決める
+      window.I18n.init();
+      this.setupLanguageToggle();
+
       // UIイベントリスナーを設定（地図より先に）
       this.setupOffsetChoices();
       this.setupEventListeners();
       this.initializeExternalLinks();
+      window.WhereShotMapController.setStatusMessage({ key: 'map.statusLoading', params: {} });
+      this.renderLanguage();
       this.isInitialized = true;
     } catch {
-      console.error('アプリケーションを初期化できませんでした');
-      window.WhereShotUtils.UIUtils.showError('アプリケーションの初期化に失敗しました。再読み込みしてください。');
+      console.error('WhereShot: failed to initialize the application');
+      window.WhereShotUtils.UIUtils.showError('error.initFailed');
     }
+  }
+
+  /**
+   * 言語切り替えボタンを配線する
+   */
+  setupLanguageToggle() {
+    document.getElementById('langToggle')?.addEventListener('click', () => {
+      window.I18n.setLanguage(window.I18n.language === 'ja' ? 'en' : 'ja');
+    });
+    document.addEventListener('languagechange', () => this.renderLanguage());
+  }
+
+  /**
+   * 現在の状態を、選ばれている言語で描き直す。
+   * 結果が無いときは解析し直さない（空の状態を壊さないため）。
+   */
+  renderLanguage() {
+    window.WhereShotUtils.UIUtils.retranslateToasts();
+    this.renderDropZone();
+    this.renderFileInfo();
+    this.renderHash();
+    this.renderPreviewToggle();
+    this.renderPreviewMessage();
+    if (this.currentExifData) {
+      this.updateEstimation();
+      this.updateExifDisplay(this.currentExifData);
+    } else {
+      this.renderIdleSources();
+      this.updateDirectionDisplay();
+    }
+    this.updateOffsetSource();
+    this.updateSunDisplay(this.currentSunData);
+    this.updateExternalLinks();
+    this.updateReport();
+    window.WhereShotMapController.renderLanguage();
   }
 
   /**
@@ -219,14 +263,14 @@ class WhereShotApp {
       const container = document.getElementById('map');
       container.classList.remove('map-initializing', 'map-error');
       container.classList.add('map-ready');
-      document.getElementById('map-coordinates').textContent = '位置指定または方向設定を選んで操作できます';
+      window.WhereShotMapController.setStatusMessage({ key: 'map.statusReady', params: {} });
     });
     document.addEventListener('whereshot:mapInitializationFailed', () => {
       this.mapInitialized = false;
       const container = document.getElementById('map');
       container.classList.remove('map-initializing');
       container.classList.add('map-error');
-      document.getElementById('map-coordinates').textContent = '地図の読み込みに失敗しました';
+      window.WhereShotMapController.setStatusMessage({ key: 'map.statusFailed', params: {} });
     });
   }
   /**
@@ -276,7 +320,7 @@ class WhereShotApp {
       link.addEventListener('click', (event) => {
         if (link.getAttribute('aria-disabled') === 'true') {
           event.preventDefault();
-          window.WhereShotUtils.UIUtils.showError('位置と解析日時を設定してからリンクをご利用ください');
+          window.WhereShotUtils.UIUtils.showError('external.disabled');
         }
       });
     }
@@ -306,13 +350,14 @@ class WhereShotApp {
       // ファイル検証
       const validation = window.WhereShotUtils.FileUtils.validateFile(file);
       if (!validation.isValid) {
-        window.WhereShotUtils.UIUtils.showError(validation.errors.join('、'));
+        // 1件ずつ出す。訳した文字列を連結すると言語を切り替えたときに直せない。
+        for (const key of validation.errors) window.WhereShotUtils.UIUtils.showError(key);
         return;
       }
 
       this.currentFile = file;
-      this.displayFileInfo(file);
-      this.updateDropZoneState(true);
+      this.renderFileInfo();
+      this.renderDropZone();
       this.showImagePreview();
 
       // 同期のExifReader例外もextractExifData内で受け止める
@@ -342,13 +387,13 @@ class WhereShotApp {
       }
       this.refreshAnalysis();
       if (window.WhereShotExifParser.readFailed) {
-        window.WhereShotUtils.UIUtils.showError('この形式または内容からはExifを読み取れませんでした');
+        window.WhereShotUtils.UIUtils.showError('error.exifUnavailable');
       } else {
-        window.WhereShotUtils.UIUtils.showSuccess('ファイルの解析が完了しました');
+        window.WhereShotUtils.UIUtils.showSuccess('toast.analyzed');
       }
     } catch {
-      console.error('ファイルを解析できませんでした');
-      window.WhereShotUtils.UIUtils.showError('ファイルを解析できませんでした。形式や内容を確認してください');
+      console.error('WhereShot: failed to analyze the file');
+      window.WhereShotUtils.UIUtils.showError('error.analyzeFailed');
     } finally {
       if (generation === this.fileGeneration) {
         window.WhereShotUtils.UIUtils.showLoading('drop-zone', false);
@@ -402,8 +447,24 @@ class WhereShotApp {
     }
     if (generation !== this.fileGeneration) return;
     this.sha256 = hash;
-    document.getElementById('file-sha256').textContent = hash || 'この開き方では計算できません';
-    document.getElementById('copy-sha256-btn').disabled = !hash;
+    this.hashState = hash ? 'ready' : 'unavailable';
+    this.renderHash();
+  }
+
+  /**
+   * SHA-256の3つの状態（未計算・算出済み・この環境では不可）を描く
+   */
+  renderHash() {
+    const element = document.getElementById('file-sha256');
+    const button = document.getElementById('copy-sha256-btn');
+    if (this.hashState === 'ready') {
+      element.textContent = this.sha256;
+      button.disabled = false;
+      return;
+    }
+    element.textContent = this.hashState === 'unavailable'
+      ? window.I18n.t('file.hashUnavailable') : '-';
+    button.disabled = true;
   }
 
   /**
@@ -424,9 +485,12 @@ class WhereShotApp {
    */
   updateExifDisplay(exifData) {
     const logic = WhereShotLogic;
+    const offsetMin = this.offsetDecision ? this.offsetDecision.offsetMin : 0;
     const wall = logic.parseExifDateTime(exifData.dateTimeOriginal);
     document.getElementById('datetime-info').textContent = wall
-      ? logic.formatWall(wall, this.offsetDecision.offsetMin).replace('（', '\n（') : '日時情報なし';
+      ? logic.formatWall(wall) + '\n'
+        + window.I18n.t('time.offsetOnly', { offset: logic.formatOffset(offsetMin) })
+      : window.I18n.t('exif.noDateTime');
 
     // GPS情報
     const gpsInfo = document.getElementById('gps-info');
@@ -434,24 +498,26 @@ class WhereShotApp {
     const badge = document.createElement('div');
     const hasGPS = logic.isValidLatLng(exifData.latitude, exifData.longitude);
     badge.className = 'gps-status-badge ' + (hasGPS ? 'gps-available' : 'gps-unavailable');
-    badge.textContent = hasGPS ? '✓ GPS有り' : '✕ GPS無し';
+    badge.dataset.i18n = hasGPS ? 'exif.gpsAvailable' : 'exif.gpsUnavailable';
+    badge.textContent = window.I18n.t(badge.dataset.i18n);
     gpsInfo.append(badge);
     const coordinates = document.createElement('p');
     coordinates.textContent = hasGPS
       ? logic.decimalToDms(exifData.latitude, true) + ', ' + logic.decimalToDms(exifData.longitude, false)
         + '\n(' + exifData.latitude.toFixed(6) + ', ' + exifData.longitude.toFixed(6) + ')'
-      : '位置情報が記録されていません';
+      : window.I18n.t('exif.noLocation');
     gpsInfo.append(coordinates);
     if (hasGPS && Number.isFinite(exifData.altitude)) {
       const altitude = document.createElement('p');
-      altitude.textContent = '高度: ' + exifData.altitude.toFixed(1) + 'm';
+      altitude.textContent = window.I18n.t('exif.altitude', { value: exifData.altitude.toFixed(1) });
       gpsInfo.append(altitude);
     }
 
     // カメラ情報（外部由来の文字列はそのままテキストとして表示）
-    const camera = [logic.formatCamera(exifData.make, exifData.model)];
-    if (exifData.lensModel) camera.push('レンズ: ' + exifData.lensModel);
-    if (exifData.software) camera.push('ソフトウェア: ' + exifData.software);
+    const camera = [logic.formatCamera(exifData.make, exifData.model)
+      || window.I18n.t('exif.cameraUnknown')];
+    if (exifData.lensModel) camera.push(window.I18n.t('exif.lens', { value: exifData.lensModel }));
+    if (exifData.software) camera.push(window.I18n.t('exif.software', { value: exifData.software }));
     document.getElementById('camera-info').textContent = camera.join('\n');
 
     // 撮影設定
@@ -461,7 +527,8 @@ class WhereShotApp {
     const exposure = logic.formatExposure(exifData.exposureTime);
     if (exposure) settings.push(exposure);
     if (exifData.focalLength !== null) settings.push(exifData.focalLength + 'mm');
-    document.getElementById('settings-info').textContent = settings.join(', ') || '設定情報なし';
+    document.getElementById('settings-info').textContent = settings.join(', ')
+      || window.I18n.t('exif.noSettings');
     this.updateDirectionDisplay();
   }
   /**
@@ -470,28 +537,33 @@ class WhereShotApp {
    */
   updateDateTimeEstimationDisplay(result) {
     const logic = WhereShotLogic;
+    const offsetMin = this.offsetDecision ? this.offsetDecision.offsetMin : 0;
     const value = document.getElementById('estimated-datetime-value');
     value.textContent = result.best
-      ? logic.formatWall(logic.utcMsToWall(result.estimatedUtcMs, this.offsetDecision.offsetMin), this.offsetDecision.offsetMin)
-        + '\n' + logic.formatUtc(result.estimatedUtcMs)
-      : '推定できませんでした';
+      ? window.I18n.t('time.withOffset', {
+        time: logic.formatWall(logic.utcMsToWall(result.estimatedUtcMs, offsetMin)),
+        offset: logic.formatOffset(offsetMin),
+      }) + '\n' + (logic.formatUtc(result.estimatedUtcMs) || window.I18n.t('time.unknown'))
+      : window.I18n.t('estimation.none');
     const confidence = document.getElementById('estimation-confidence');
     const percent = Math.round(result.confidence * 100);
-    confidence.textContent = '整合度: ' + percent + '%';
+    confidence.textContent = window.I18n.t('estimation.confidence', { percent });
     confidence.className = 'estimation-confidence ' + (percent >= 80 ? 'high' : percent >= 60 ? 'medium' : 'low');
     document.getElementById('set-estimated-datetime-btn').hidden = !result.best;
 
     const warnings = result.conflicts.map((conflict) => ({
       severity: 'warning',
-      message: logic.SOURCE_LABEL[conflict.a] + 'と' + logic.SOURCE_LABEL[conflict.b] + 'の日時が食い違っています',
+      message: logic.msg('estimation.conflict', {
+        a: logic.msg(logic.SOURCE_KEYS[conflict.a]), b: logic.msg(logic.SOURCE_KEYS[conflict.b]),
+      }),
     }));
     for (const note of result.notes) {
       warnings.push({
         severity: 'info',
-        message: logic.SOURCE_LABEL[note.type] + 'が推定日時と異なります。撮影後に保存・編集・コピーされた可能性があります',
+        message: logic.msg('estimation.noteModified', { source: logic.msg(logic.SOURCE_KEYS[note.type]) }),
       });
     }
-    if (!result.best) warnings.push({ severity: 'warning', message: '日時情報が見つかりません' });
+    if (!result.best) warnings.push({ severity: 'warning', message: logic.msg('estimation.missing') });
     this.displayEstimationWarnings(warnings);
     this.displayDateTimeSources(result.sources);
   }
@@ -506,7 +578,7 @@ class WhereShotApp {
     for (const warning of warnings) {
       const item = document.createElement('div');
       item.className = 'warning-item ' + warning.severity;
-      item.textContent = warning.message;
+      item.textContent = window.I18n.message(warning.message);
       container.append(item);
     }
   }
@@ -518,22 +590,27 @@ class WhereShotApp {
     const container = document.getElementById('datetime-sources');
     container.replaceChildren();
     if (!sources.length) {
-      container.textContent = '日時情報が見つかりませんでした';
+      container.textContent = window.I18n.t('estimation.noSources');
       return;
     }
+    const offsetMin = this.offsetDecision ? this.offsetDecision.offsetMin : 0;
     for (const source of sources) {
       const item = document.createElement('div');
       item.className = 'source-item';
       const label = document.createElement('span');
       label.className = 'source-type';
-      label.textContent = source.label + (source.hasTime ? '' : '（日付のみ・時刻は正午）');
+      label.textContent = window.I18n.message(source.label)
+        + (source.hasTime ? '' : window.I18n.t('estimation.dateOnly'));
       const date = document.createElement('span');
       date.className = 'source-datetime';
-      date.textContent = WhereShotLogic.formatWall(
-        WhereShotLogic.utcMsToWall(source.utcMs, this.offsetDecision.offsetMin), this.offsetDecision.offsetMin
-      );
+      const wall = WhereShotLogic.utcMsToWall(source.utcMs, offsetMin);
+      date.textContent = wall
+        ? window.I18n.t('time.withOffset', {
+          time: WhereShotLogic.formatWall(wall), offset: WhereShotLogic.formatOffset(offsetMin),
+        })
+        : window.I18n.t('time.unknown');
       if (source.type === 'gps_utc' || ['pxl-utc', 'unix-ms', 'unix-s'].includes(source.pattern)) {
-        date.textContent += '［UTCで記録］';
+        date.textContent += window.I18n.t('estimation.utcRecorded');
       }
       const reliability = document.createElement('span');
       reliability.className = 'source-reliability';
@@ -541,6 +618,21 @@ class WhereShotApp {
       item.append(label, date, reliability);
       container.append(item);
     }
+  }
+
+  /**
+   * 解析前の「待機中」を作り直す。data-i18nを付けるので言語切り替えにも追従する。
+   */
+  renderIdleSources() {
+    const container = document.getElementById('datetime-sources');
+    const item = document.createElement('div');
+    item.className = 'source-item';
+    const label = document.createElement('span');
+    label.className = 'source-type';
+    label.dataset.i18n = 'estimation.waiting';
+    label.textContent = window.I18n.t('estimation.waiting');
+    item.append(label);
+    container.replaceChildren(item);
   }
   /**
    * 推定日時を解析日時にセット
@@ -552,7 +644,7 @@ class WhereShotApp {
       this.currentEstimationResult.estimatedUtcMs, this.offsetDecision.offsetMin
     ));
     this.refreshAnalysis();
-    window.WhereShotUtils.UIUtils.showSuccess('推定日時を解析日時にセットしました');
+    window.WhereShotUtils.UIUtils.showSuccess('toast.estimateApplied');
   }
   /**
    * 解析結果を表示したあとに地図を初期化
@@ -617,24 +709,24 @@ class WhereShotApp {
   updateOffsetSource() {
     const d = this.offsetDecision;
     if (!d) return;
+    const logic = WhereShotLogic;
     const lines = [];
-    if (d.source === 'exif') lines.push('ExifのOffsetTimeOriginalから');
+    if (d.source === 'exif') lines.push(logic.msg('offset.exif'));
     if (d.source === 'gps') {
-      lines.push('GPS時刻（UTC）との差から推定（残差 ' + String(d.residualSec).replace('-', '−') + ' 秒）');
+      lines.push(logic.msg('offset.gps', { residual: String(d.residualSec).replace('-', '−') }));
     }
     if (d.source === 'browser') {
-      lines.push('このブラウザーのタイムゾーンを仮に使っています。撮影地が違う場合は選び直してください');
+      lines.push(logic.msg('offset.browser'));
       const location = window.WhereShotMapController.getCurrentLocation();
-      const hint = WhereShotLogic.longitudeOffsetHint(location?.longitude);
+      const hint = logic.longitudeOffsetHint(location?.longitude);
       if (hint !== null && Math.abs(hint - d.offsetMin) >= 120) {
-        lines.push('撮影地の経度からの目安はUTC' + WhereShotLogic.formatOffset(hint)
-          + 'です（標準時・夏時間とは一致しないことがあります）。UTCオフセットを確認してください');
+        lines.push(logic.msg('offset.hint', { offset: logic.formatOffset(hint) }));
       }
     }
-    if (d.source === 'manual') lines.push('手動で指定');
-    if (d.conflict) lines.push('ExifのオフセットとGPS時刻からの推定が食い違っています');
+    if (d.source === 'manual') lines.push(logic.msg('offset.manual'));
+    if (d.conflict) lines.push(logic.msg('offset.conflict'));
     const source = document.getElementById('utc-offset-source');
-    source.textContent = lines.join('\n');
+    source.textContent = window.I18n.messages(lines);
     source.classList.toggle('offset-warning', d.source === 'browser' || d.conflict);
   }
   /**
@@ -655,9 +747,10 @@ class WhereShotApp {
     this.currentWeather = weather;
     this.setExternalLink('weather-link', weather?.url || null);
     document.getElementById('weather-link').textContent = weather?.station
-      ? '過去の天気（' + weather.station + '・約' + weather.distanceKm + 'km）' : '過去の天気';
+      ? window.I18n.t('external.weatherStation', { station: weather.station, km: weather.distanceKm })
+      : window.I18n.t('external.weather');
     document.getElementById('weather-note').textContent = location && !weather?.station
-      ? '200km以内に気象庁の観測所がありません（日本国外など）。日時も確認してください' : '';
+      ? window.I18n.t('external.weatherNote') : '';
   }
   /**
    * 太陽位置を計算
@@ -668,7 +761,7 @@ class WhereShotApp {
     if (!this.hasValidLocation() || utcMs === null) {
       this.currentSunData = null;
       this.updateSunDisplay(null);
-      if (notify) window.WhereShotUtils.UIUtils.showError('撮影位置と解析日時を設定してください');
+      if (notify) window.WhereShotUtils.UIUtils.showError('sun.needInput');
       return;
     }
     this.currentSunData = window.WhereShotSunCalculator.calculateSunPosition(
@@ -677,20 +770,25 @@ class WhereShotApp {
     this.updateSunDisplay(this.currentSunData);
     this.updateExternalLinks();
     this.updateReport();
-    if (notify) window.WhereShotUtils.UIUtils.showSuccess('太陽位置の計算が完了しました');
+    if (notify) window.WhereShotUtils.UIUtils.showSuccess('sun.done');
   }
   /**
    * 太陽と影の表示を更新
    */
   updateSunDisplay(sun) {
-    const direction = (value) => value.toFixed(1) + '°（' + WhereShotLogic.toCardinalJa(value) + '）';
+    const logic = WhereShotLogic;
+    const bearing = (value) => window.I18n.t('sun.bearing', {
+      deg: value.toFixed(1), cardinal: window.I18n.t(logic.cardinalKey(value)),
+    });
+    const noShadow = () => window.I18n.t('sun.noShadow');
     document.getElementById('sun-elevation').textContent = sun ? sun.altitudeDeg.toFixed(1) + '°' : '-';
-    document.getElementById('sun-azimuth').textContent = sun ? direction(sun.azimuthDeg) : '-';
-    document.getElementById('sun-phase').textContent = sun ? WhereShotLogic.PHASE_JA[sun.phase] : '-';
+    document.getElementById('sun-azimuth').textContent = sun ? bearing(sun.azimuthDeg) : '-';
+    document.getElementById('sun-phase').textContent = sun ? window.I18n.t(logic.phaseKey(sun.phase)) : '-';
     document.getElementById('shadow-direction').textContent = sun
-      ? (sun.shadowDirectionDeg === null ? '影なし' : direction(sun.shadowDirectionDeg)) : '-';
+      ? (sun.shadowDirectionDeg === null ? noShadow() : bearing(sun.shadowDirectionDeg)) : '-';
     document.getElementById('shadow-length').textContent = sun
-      ? (sun.shadowRatio === null ? '影なし' : '高さの' + sun.shadowRatio.toFixed(2) + '倍') : '-';
+      ? (sun.shadowRatio === null ? noShadow()
+        : window.I18n.t('sun.shadowRatio', { ratio: sun.shadowRatio.toFixed(2) })) : '-';
   }
   /**
    * 手動位置指定モードを切り替え
@@ -736,16 +834,21 @@ class WhereShotApp {
    * 撮影方位と真北・磁北の根拠を表示
    */
   updateDirectionDisplay() {
+    const logic = WhereShotLogic;
     const direction = this.getCurrentDirection();
-    let text = '撮影方位: 記録なし';
+    let message = logic.msg('direction.none');
     if (Number.isFinite(direction)) {
       const manual = window.WhereShotMapController.directionSource === 'manual';
       const ref = this.currentExifData?.imgDirectionRef;
-      const reference = ref === 'M' ? '磁北基準' : (ref === 'T' ? '真北基準' : '基準不明');
-      text = '撮影方位: ' + direction.toFixed(1) + '°（' + WhereShotLogic.toCardinalJa(direction) + '）'
-        + (manual ? '［手動］' : '［Exif・' + reference + '］');
+      const referenceKey = ref === 'M' ? 'direction.refMagnetic'
+        : (ref === 'T' ? 'direction.refTrue' : 'direction.refUnknown');
+      message = logic.msg('direction.value', {
+        deg: direction.toFixed(1), cardinal: logic.msg(logic.cardinalKey(direction)),
+        basis: manual ? logic.msg('direction.manual')
+          : logic.msg('direction.exif', { reference: logic.msg(referenceKey) }),
+      });
     }
-    document.getElementById('direction-info').textContent = text;
+    document.getElementById('direction-info').textContent = window.I18n.message(message);
   }
 
   /**
@@ -760,17 +863,18 @@ class WhereShotApp {
     }
     const time = this.getAnalysisTime();
     const location = window.WhereShotMapController.getCurrentLocation();
-    preview.textContent = WhereShotLogic.buildReport({
+    preview.textContent = window.I18n.messages(WhereShotLogic.buildReport({
       fileName: this.currentFile.name, fileSize: this.currentFile.size, fileType: this.currentFile.type,
       sha256: this.sha256, wall: time.wall, offsetMin: time.offsetMin,
       offsetSource: this.offsetDecision?.source, residualSec: this.offsetDecision?.residualSec,
-      dateSourceLabel: this.dateWasEdited ? '解析日時を手動指定' : this.currentEstimationResult?.best?.label,
+      dateSource: this.dateWasEdited
+        ? WhereShotLogic.msg('report.manualDateTime') : this.currentEstimationResult?.best?.label,
       confidence: this.currentEstimationResult?.confidence || 0,
       latitude: location?.latitude, longitude: location?.longitude, locationSource: this.locationSource,
       directionDeg: this.getCurrentDirection(), sun: this.currentSunData,
       station: this.currentWeather?.station, stationKm: this.currentWeather?.distanceKm,
       generatedAtUtcMs: Date.now(),
-    });
+    }));
     document.getElementById('copy-report-btn').disabled = false;
   }
 
@@ -779,11 +883,11 @@ class WhereShotApp {
    */
   async copyText(text) {
     try {
-      if (!navigator.clipboard?.writeText) throw new Error('コピー非対応');
+      if (!navigator.clipboard?.writeText) throw new Error('clipboard is unavailable');
       await navigator.clipboard.writeText(text);
-      window.WhereShotUtils.UIUtils.showSuccess('コピーしました');
+      window.WhereShotUtils.UIUtils.showSuccess('toast.copied');
     } catch {
-      window.WhereShotUtils.UIUtils.showError('コピーできませんでした。内容を選択してコピーしてください');
+      window.WhereShotUtils.UIUtils.showError('error.copyFailed');
     }
   }
   /**
@@ -809,12 +913,12 @@ class WhereShotApp {
    * アプリケーションをリセット
    */
   resetApplication() {
-    if (!confirm('すべてのデータをリセットしますか？')) return;
+    if (!confirm(window.I18n.t('app.resetConfirm'))) return;
     ++this.fileGeneration;
     this.clearAnalysisData();
     this.resetUI();
     window.WhereShotUtils.UIUtils.showLoading('drop-zone', false);
-    window.WhereShotUtils.UIUtils.showSuccess('アプリケーションがリセットされました');
+    window.WhereShotUtils.UIUtils.showSuccess('toast.reset');
   }
 
   /**
@@ -830,6 +934,8 @@ class WhereShotApp {
     this.offsetDecision = null;
     this.locationSource = null;
     this.sha256 = null;
+    this.hashState = 'none';
+    this.previewFailed = false;
     this.dateWasEdited = false;
     window.WhereShotMapController.resetMap();
     window.WhereShotExifParser.clearData();
@@ -852,8 +958,12 @@ class WhereShotApp {
       previewDiv.hidden = true;
     }
 
-    // ドロップゾーンの状態をリセット
-    this.updateDropZoneState(false);
+    // ドロップゾーンとファイル情報の状態をリセット
+    this.renderDropZone();
+    this.renderFileInfo();
+    this.renderHash();
+    this.renderPreviewToggle();
+    this.renderPreviewMessage();
 
     // 各情報をクリア
     const infoElements = [
@@ -867,7 +977,6 @@ class WhereShotApp {
       'shadow-direction',
       'shadow-length',
       'direction-info',
-      'file-sha256',
       'utc-offset-source',
     ];
 
@@ -902,10 +1011,7 @@ class WhereShotApp {
       warningsContainer.hidden = true;
     }
 
-    const sourcesContainer = document.getElementById('datetime-sources');
-    if (sourcesContainer) {
-      sourcesContainer.textContent = '解析待機中...';
-    }
+    this.renderIdleSources();
 
     // 入力をクリア
     const analysisDate = document.getElementById('analysis-date');
@@ -921,45 +1027,25 @@ class WhereShotApp {
 
     this.updateExternalLinks();
     this.updateReport();
-    document.getElementById('copy-sha256-btn').disabled = true;
 
     // 地図座標表示をリセット
-    const mapCoordinates = document.getElementById('map-coordinates');
-    if (mapCoordinates) {
-      mapCoordinates.textContent = '位置指定または方向設定を選んで操作できます';
-    }
+    window.WhereShotMapController.setStatusMessage({ key: 'map.statusReady', params: {} });
   }
 
   /**
-   * ファイル情報を表示
-   * @param {File} file - ファイルオブジェクト
+   * 選択中のファイルの情報を描く（未選択なら「-」）
    */
-  displayFileInfo(file) {
-    // ファイル名
-    const fileNameElement = document.getElementById('file-name');
-    if (fileNameElement) {
-      fileNameElement.textContent = file.name;
-    }
-
-    // ファイルサイズ
-    const fileSizeElement = document.getElementById('file-size');
-    if (fileSizeElement) {
-      fileSizeElement.textContent =
-        window.WhereShotUtils.FileUtils.formatFileSize(file.size);
-    }
-
-    // ファイル形式
-    const fileTypeElement = document.getElementById('file-type');
-    if (fileTypeElement) {
-      fileTypeElement.textContent = file.type || '不明';
-    }
-
-    // 更新日
-    const fileModifiedElement = document.getElementById('file-modified');
-    if (fileModifiedElement) {
-      fileModifiedElement.textContent =
-        WhereShotLogic.formatUtc(file.lastModified);
-    }
+  renderFileInfo() {
+    const file = this.currentFile;
+    const set = (id, value) => {
+      const element = document.getElementById(id);
+      if (element) element.textContent = value;
+    };
+    set('file-name', file ? file.name : '-');
+    set('file-size', file ? window.WhereShotUtils.FileUtils.formatFileSize(file.size) : '-');
+    set('file-type', file ? (file.type || window.I18n.t('file.typeUnknown')) : '-');
+    set('file-modified', file
+      ? (WhereShotLogic.formatUtc(file.lastModified) || window.I18n.t('time.unknown')) : '-');
   }
 
   /**
@@ -986,17 +1072,37 @@ class WhereShotApp {
     const message = document.getElementById('preview-message');
     this.previewUrl = URL.createObjectURL(this.currentFile);
     img.hidden = false;
-    message.textContent = '';
+    this.previewFailed = false;
+    this.renderPreviewMessage();
     img.onerror = () => {
       img.hidden = true;
       img.removeAttribute('src');
-      message.textContent = 'この形式はプレビューできません';
+      this.previewFailed = true;
+      this.renderPreviewMessage();
       if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
       this.previewUrl = null;
     };
     img.src = this.previewUrl;
     display.hidden = false;
-    document.getElementById('toggle-preview-btn').textContent = '🙈 プレビュー非表示';
+    this.renderPreviewToggle();
+  }
+
+  /**
+   * プレビュー切り替えボタンの文言を、開いているかどうかから組み立てる
+   */
+  renderPreviewToggle() {
+    const display = document.getElementById('image-display');
+    const button = document.getElementById('toggle-preview-btn');
+    if (!display || !button) return;
+    button.textContent = window.I18n.t(display.hidden ? 'preview.show' : 'preview.hide');
+  }
+
+  /**
+   * プレビューできなかった旨を、状態から描く
+   */
+  renderPreviewMessage() {
+    const message = document.getElementById('preview-message');
+    if (message) message.textContent = this.previewFailed ? window.I18n.t('preview.unsupported') : '';
   }
 
   /**
@@ -1009,8 +1115,9 @@ class WhereShotApp {
     if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
     this.previewUrl = null;
     document.getElementById('image-display').hidden = true;
-    document.getElementById('preview-message').textContent = '';
-    document.getElementById('toggle-preview-btn').textContent = '🔍 プレビュー表示';
+    this.previewFailed = false;
+    this.renderPreviewMessage();
+    this.renderPreviewToggle();
   }
   /**
    * ファイルを変更
@@ -1023,13 +1130,15 @@ class WhereShotApp {
   }
 
   /**
-   * ボタンのノードを保持したままドロップゾーンを更新
+   * ボタンのノードを保持したままドロップゾーンを更新（状態はcurrentFileが持つ）
    */
-  updateDropZoneState(uploaded) {
+  renderDropZone() {
     const dropZone = document.getElementById('drop-zone');
+    const uploaded = !!this.currentFile;
     dropZone.classList.toggle('uploaded', uploaded);
     dropZone.querySelector('.upload-icon').textContent = uploaded ? '✅' : '📸';
-    document.getElementById('upload-title').textContent = uploaded ? 'ファイル読み込み完了' : '画像をドラッグ&ドロップ';
+    document.getElementById('upload-title').textContent =
+      window.I18n.t(uploaded ? 'upload.done' : 'upload.title');
     document.getElementById('upload-filename').textContent = uploaded ? this.currentFile.name : '';
   }
 }

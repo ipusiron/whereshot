@@ -6,7 +6,8 @@ const vm = require('node:vm');
 const { execFileSync } = require('node:child_process');
 const { createHash } = require('node:crypto');
 const S = require('./fixtures/sample.cjs');
-const { L, nowMs, exif, wall, latitude: lat, longitude: lng, utcMs, sun, stations, buffer } = S;
+const { L, I18n, nowMs, exif, wall, latitude: lat, longitude: lng, utcMs, sun, stations, buffer } = S;
+const ja = (key, values) => I18n.tIn('ja', key, values);
 const root = path.join(__dirname, '..');
 const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
 function section(title, level = 3) {
@@ -45,7 +46,7 @@ test('K ファイル名の表9行を再計算', () => {
     assert.equal(result.length, 1, name);
     const r = result[0];
     assert.equal(r.pattern, pattern, name);
-    assert.equal(r.wall ? L.formatWall(r.wall, null) : L.formatUtc(r.utcMs), value, name);
+    assert.equal(r.wall ? L.formatWall(r.wall) : L.formatUtc(r.utcMs), value, name);
     assert.equal(base.startsWith('UTC'), r.utcMs !== undefined, name);
     assert.equal(base.includes('日付のみ'), !r.hasTime, name);
   }
@@ -56,13 +57,17 @@ test('K サンプル解析例10行を実画像から再計算', () => {
   assert.equal(table.length, 10);
   const values = Object.fromEntries(table);
   const offset = L.decideOffset({ exifOffset: exif.offsetTimeOriginal, wall, gpsUtcMs: exif.gpsUtcMs, browserOffsetMin: -420 });
-  assert.equal(values['撮影日時（現地）'], L.formatWall(wall, null));
+  assert.equal(values['撮影日時（現地）'], L.formatWall(wall));
   assert.equal(values['撮影日時（UTC）'], L.formatUtc(utcMs));
   assert.equal(values['UTCオフセット'], `${L.formatOffset(offset.offsetMin)}（GPS時刻との差、残差${offset.residualSec}秒）`);
   assert.equal(values['太陽高度'], sun.altitudeDeg.toFixed(1) + '°');
-  assert.equal(values['太陽方位'], `${sun.azimuthDeg.toFixed(1)}°（${L.toCardinalJa(sun.azimuthDeg)}）`);
-  assert.equal(values['影の方向'], `${sun.shadowDirectionDeg.toFixed(1)}°（${L.toCardinalJa(sun.shadowDirectionDeg)}）`);
-  assert.equal(values['影の長さ'], `高さの${sun.shadowRatio.toFixed(2)}倍`);
+  assert.equal(values['太陽方位'], ja('sun.bearing', {
+    deg: sun.azimuthDeg.toFixed(1), cardinal: ja(L.cardinalKey(sun.azimuthDeg)),
+  }));
+  assert.equal(values['影の方向'], ja('sun.bearing', {
+    deg: sun.shadowDirectionDeg.toFixed(1), cardinal: ja(L.cardinalKey(sun.shadowDirectionDeg)),
+  }));
+  assert.equal(values['影の長さ'], ja('sun.shadowRatio', { ratio: sun.shadowRatio.toFixed(2) }));
   const estimate = L.estimateDateTime({ exif, fileName: '2016-07-24 10.33.57.jpg', offsetMin: 540, nowMs });
   assert.equal(values['整合度'], `${Math.round(estimate.confidence * 100)}%`);
   const jma = L.jmaHourlyUrl(lat, lng, utcMs, stations);
@@ -106,7 +111,7 @@ test('K 画像参照と構成図の全パスが実在する', () => {
     checked.push(file);
     if (name.endsWith('/')) stack[depth] = name.slice(0, -1);
   }
-  assert.equal(checked.length, 26);
+  assert.equal(checked.length, 28);
 });
 
 test('K YAML構造・保護値・シリーズ表記・未実装機能の範囲', () => {

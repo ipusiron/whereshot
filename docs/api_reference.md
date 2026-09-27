@@ -111,7 +111,7 @@ class MapController {
 ```javascript
 const WhereShotUtils = {
     FileUtils: { formatFileSize, validateFile },
-    UIUtils: { showError, showSuccess, showLoading },
+    UIUtils: { showToast, showError, showSuccess, showLoading, retranslateToasts },
     SecurityUtils: { clearSensitiveData, calculateHash }
 }
 ```
@@ -255,17 +255,17 @@ interface SunData {
 | isValidWall(w) | 有効な年月日時分秒かどうか |
 | parseExifDateTime(str), inputValueToWall(v), utcMsToWall(ms, offsetMin) | 壁時計またはnull |
 | parseOffset(str) | -720〜840のオフセット分またはnull |
-| formatOffset(n), formatWall(w, offsetMin), formatUtc(ms), wallToInputValue(w) | 書式付き文字列 |
+| formatOffset(n), formatWall(w), formatUtc(ms), wallToInputValue(w) | 書式付き文字列（不正入力は空文字） |
 | wallToUtcMs(w, offsetMin), gpsDateTimeToUtcMs(date, time) | UTCミリ秒またはnull |
 | inferOffsetFromGps(w, ms) | {offsetMin, residualSec}またはnull |
 | decideOffset(input) | {offsetMin, source, residualSec, conflict} |
 | longitudeOffsetHint(lng) | 表示用の目安（自動適用しない） |
 | normalizeTags(tags) | ExifData |
-| formatExposure(time), formatCamera(make, model) | 表示用文字列 |
+| formatExposure(time), formatCamera(make, model) | 表示用文字列（不明はnull） |
 | extractDatesFromFilename(name, nowMs) | {pattern, matched, hasTime, reliability, wallまたはutcMs}の配列 |
 | estimateDateTime(input) | {sources, conflicts, notes, agreement, best, estimatedUtcMs, confidence} |
 | sunReport(SunCalc, lat, lng, utcMs) | SunDataまたはnull |
-| sunPhaseKey(alt, az), toCardinalJa(degrees) | 時間帯キー、日本語16方位 |
+| sunPhaseKey(alt, az), phaseKey(phase), cardinalKey(degrees) | 時間帯と16方位のメッセージキー |
 | isValidLatLng(lat, lng), decimalToDms(value, isLat) | 座標の検証、度分秒表記 |
 | distanceM(lat1, lng1, lat2, lng2), bearing(lat1, lng1, lat2, lng2) | メートル、北基準の方位角 |
 | destinationPoint(lat, lng, bearing, distance) | {lat, lng} |
@@ -273,19 +273,50 @@ interface SunData {
 | nasaWorldviewUrl(lat, lng, wall), sunCalcOrgUrl(lat, lng, wall) | 現地の日付・時刻を使うURL |
 | gsiMapUrl(lat, lng, photo), streetViewUrl(lat, lng, heading) | URLまたはnull |
 | jmaHourlyUrl(lat, lng, utcMs, stations) | {url, station, distanceKm}またはnull |
-| buildReport(d), formatInt(n) | レポート、3桁区切り文字列 |
+| buildReport(d) | {key, params}の配列（15行または8行） |
+| msg(key, params), formatInt(n) | メッセージ、3桁区切り文字列 |
 
-公開定数はOFFSET_CHOICES（38件）、FILENAME_PATTERNS（11種）、SOURCE_LABEL、PHASE_JA、JMA_TOPです。
-ロジックはDOM、現在時刻、crypto、ローカルタイムゾーンに依存しません。
+公開定数はOFFSET_CHOICES（38件）、FILENAME_PATTERNS（11種）、SOURCE_KEYS、
+OFFSET_SOURCE_KEYS、LOCATION_SOURCE_KEYS、CARDINAL_KEYS（16件）、PHASE_KEYS（7件）、JMA_TOPです。
+ロジックはDOM、現在時刻、crypto、ローカルタイムゾーンに依存せず、**文言も持ちません**。
+表示用の語はすべてjs/i18n.jsの辞書にあり、`I18n.t(key, params)`と`I18n.message({key, params})`で訳します。
 ブラウザーの仮オフセットだけはDOM側で撮影日時の夏時間を含めて求めます。
 
 ### SHA-256とレポート
 
 main.jsのcalculateFileHashはファイルのArrayBufferをWeb CryptoのSHA-256へ渡します。
 buildReportにはfileName、fileSize、fileType、sha256、wall、offsetMin、offsetSource、residualSec、
-dateSourceLabel、confidence、latitude、longitude、locationSource、directionDeg、sun、station、
-stationKm、generatedAtUtcMsを渡します。
+dateSource、confidence、latitude、longitude、locationSource、directionDeg、sun、station、
+stationKm、generatedAtUtcMsを渡します。dateSourceは`{key, params}`で、
+推定結果のsources[i].labelか`msg('report.manualDateTime')`を渡します。
+戻り値は行ごとの`{key, params}`の配列で、`I18n.messages(lines)`で1本のテキストにします。
 作成時刻はDOM側がDate.now()で用意します。結果はtextContentでpreに入れ、Clipboard APIが使えるときだけコピーします。
+
+### 6. I18n (i18n.js)
+
+日本語と英語の辞書、およびDOMへの適用層です。他のスクリプトは言語ごとの文字列を持ちません。
+
+```javascript
+const I18n = {
+    ja, en,                              // キーが完全に一致する2つの辞書
+    t(key, params),                      // 現在の言語で訳す（未知のキーはthrow）
+    tIn(language, key, params),          // 言語を指定して訳す（テスト用）
+    message({ key, params }, language),   // 入れ子の{key}も訳す
+    messages(list, language),             // 改行で連結する
+    apply(root), init(), setLanguage(v), language
+}
+```
+
+`apply()`は`data-i18n`のtextContentと、`data-i18n-aria-label` / `-title` / `-placeholder` /
+`-alt` / `-content`の各属性を当てます。`<meta>`のcontentもここで訳します。
+言語は`?lang=` → localStorage（`whereshot-language`） → `navigator.language`の順に決めます。
+`setLanguage()`は`languagechange`イベントを発火し、main.jsの`renderLanguage()`と
+map-controller.jsの`renderLanguage()`が状態から描き直します。
+
+**状態を訳した文字列で持たないこと。**トーストはキーを`data-toast-key`に覚え、
+プレビューの成否は`previewFailed`、SHA-256は`hashState`、地図の文言は`statusMessage`が持ちます。
+JSが書き込むスロット（`#upload-title`・`#toggle-preview-btn`・`#weather-link`・`#direction-info`・
+`#map-coordinates`ほか）には`data-i18n`を付けません。付けると言語切り替えで結果が初期文言に戻ります。
 
 ## ⚡ イベントシステム
 
@@ -397,9 +428,8 @@ ExifReader 4.12.0が読み取れる形式に限り、読み取り失敗時もnor
 1. **ファイル検証**:
    ```javascript
    const validation = window.WhereShotUtils.FileUtils.validateFile(file);
-   if (!validation.isValid) {
-       throw new Error(validation.errors.join(', '));
-   }
+   // errorsはメッセージキーの配列。訳した文字列を連結して持ち回らない。
+   for (const key of validation.errors) window.WhereShotUtils.UIUtils.showError(key);
    ```
 
 2. **座標の範囲チェック**:
@@ -417,13 +447,13 @@ ExifReader 4.12.0が読み取れる形式に限り、読み取り失敗時もnor
        const result = await riskyOperation();
    } catch (error) {
        console.error('処理に失敗しました');
-       window.WhereShotUtils.UIUtils.showError('処理に失敗しました。内容を確認してください');
+       window.WhereShotUtils.UIUtils.showError('error.analyzeFailed');
    }
    ```
 
 2. **ユーザーフレンドリーなエラーメッセージ**:
    ```javascript
-   window.WhereShotUtils.UIUtils.showError('ファイルの読み込みに失敗しました。ファイル形式を確認してください。');
+   window.WhereShotUtils.UIUtils.showError('error.unsupportedType');
    ```
 
 ---
