@@ -133,3 +133,24 @@ test('K YAML構造・保護値・シリーズ表記・未実装機能の範囲',
   const withoutFuture = readme.replace(/## 🧭 今後の候補[^]*?(?=\n## )/, '');
   assert.doesNotMatch(withoutFuture, /バッチ処理|CSV|座標系変換|UTM|JGD2011|視野角|磁気偏角|季節判定|自動削除|一時ストレージ/);
 });
+
+test('ユースケースの「このツールならではの使い方」の数値は計算部と同じ（日英）', () => {
+  const en = fs.readFileSync(path.join(root, 'README.en.md'), 'utf8');
+  const { SunCalc } = S;
+  assert.deepEqual([sun.altitudeDeg.toFixed(1), sun.shadowRatio.toFixed(2)], ['64.0', '0.49']);
+  assert.equal((1.5 / sun.shadowRatio).toFixed(1), '3.1');
+  assert.ok(readme.includes('太陽高度が64.0°で、影の長さは「' + ja('sun.shadowRatio', { ratio: '0.49' }) + '」'));
+  assert.ok(en.includes('the sun is at 64.0° and the shadow length shows as "0.49× the height"'));
+  const noon = (month, day) => L.sunReport(SunCalc, 35.68, 139.77,
+    L.wallToUtcMs({ year: 2026, month, day, hour: 12, minute: 0, second: 0 }, 540));
+  const [w, s] = [noon(12, 22), noon(6, 21)];
+  const got = [w.altitudeDeg.toFixed(1), w.shadowRatio.toFixed(2), s.altitudeDeg.toFixed(1), s.shadowRatio.toFixed(2)];
+  assert.deepEqual(got, ['30.7', '1.69', '77.2', '0.23']);
+  assert.equal(Math.round(10 * w.shadowRatio), 17);
+  assert.ok(readme.includes('冬至）が30.7°で影は高さの1.69倍、6月21日（夏至）が77.2°で0.23倍'));
+  assert.ok(en.includes('gives 30.7° with a shadow 1.69 times the height') && en.includes('gives 77.2° and 0.23 times'));
+  const wallBkk = { year: 2026, month: 8, day: 10, hour: 14, minute: 0, second: 0 };
+  const d = L.decideOffset({ wall: wallBkk, gpsUtcMs: Date.UTC(2026, 7, 10, 5, 0, 2) });
+  assert.deepEqual([d.source, L.formatOffset(d.offsetMin), d.residualSec], ['gps', '+09:00', -2]);
+  assert.ok(readme.includes('推定はUTC+09:00（残差-2秒）') && en.includes('UTC+09:00 (residual -2 seconds)'));
+});
