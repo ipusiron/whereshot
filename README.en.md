@@ -153,6 +153,12 @@ An invalid calendar date is rejected rather than rolled into the next month.
 
 ## 🎯 Use cases
 
+### Ways of using this tool in particular
+
+- Finding a height from the length of a shadow (science and math classes): for the Marugame Castle sample image (10:33 on 24 July 2016), the sun is at 64.0° and the shadow length shows as "0.49× the height". Measure a shadow and divide by 0.49 to get the height; a 1.5 m shadow means about 3.1 m. Set the location and the analysis time to your schoolyard and the class time to get the ratio there. It is a real-world example of the tangent (only on flat ground with a clear shadow tip)
+- Comparing sunlight across the seasons (house hunting and gardening): set the location by hand and change only the analysis time to compare the sun's altitude. At noon (UTC+09:00) at 35.68°N, 139.77°E (near Tokyo Station), 22 December 2026 (winter solstice) gives 30.7° with a shadow 1.69 times the height, and 21 June (summer solstice) gives 77.2° and 0.23 times. A 10 m building to the south casts a shadow of about 17 m at noon on the winter solstice (terrain and the shapes of nearby buildings are not taken into account)
+- Finding a camera clock left on home time in travel photos (organizing photos): for photos with a GPS time, the tool infers the UTC offset from the difference between the capture time and the GPS time (UTC). If a photo taken in Bangkok has a capture time of 14:00:00 and a GPS time of 05:00:02 UTC, the inferred offset is UTC+09:00 (residual -2 seconds). Bangkok's standard time is UTC+07:00, so the camera clock was still on Japan time, which tells you how to fix the times in the album (smartphones set their clocks automatically, so this is less likely with them)
+
 ### OSINT and verification
 
 - **Checking social posts**: whether the claimed time and place hold together
